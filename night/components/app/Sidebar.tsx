@@ -19,12 +19,11 @@ interface NavItem {
 }
 
 const NAV: NavItem[] = [
-  { href: "/app/agents",   label: "Agents",   letter: "A" },
-  { href: "/app/policies", label: "Policies", letter: "P" },
-  { href: "/app/graph",    label: "Graph",    letter: "G" },
-  { href: "/app/activity", label: "Activity", letter: "Q" },
-  { href: "/app/demo",     label: "Demo",     letter: "D" },
-  { href: "/app/audit",    label: "Audit",    letter: "U" },
+  { href: "/app/agents",   label: "Agents",  letter: "A" },
+  { href: "/app/policies", label: "Sources", letter: "S" },
+  { href: "/app/graph",    label: "Graph",   letter: "G" },
+  { href: "/app/activity", label: "Chat",    letter: "C" },
+  { href: "/app/audit",    label: "Audit",   letter: "U" },
 ];
 
 const STORAGE_KEY = "Omnis:sidebar-collapsed";
@@ -135,16 +134,18 @@ export function Sidebar() {
         })}
       </nav>
 
-      <div className="border-t border-foreground/15 font-mono text-xs">
+      <div className="border-t border-foreground/15">
+        <div className={collapsed ? "flex justify-center py-3" : "px-4 py-3"}>
+          <WalletChip compact={collapsed} />
+        </div>
         <div
-          className={`flex items-center ${
-            collapsed ? "flex-col gap-2 py-3" : "justify-between px-4 py-3"
+          className={`border-t border-foreground/15 flex items-center ${
+            collapsed ? "justify-center py-2" : "justify-end px-4 py-2"
           }`}
         >
-          <WalletChip compact={collapsed} />
           <button
             onClick={toggle}
-            className="hidden md:flex items-center text-foreground/55 hover:text-foreground transition-colors shrink-0"
+            className="hidden md:flex items-center font-mono text-xs text-foreground/45 hover:text-foreground transition-colors"
             aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
             title={collapsed ? "Expand" : "Collapse"}
           >

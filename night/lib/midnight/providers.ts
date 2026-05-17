@@ -19,7 +19,7 @@ import type {
 } from "@midnight-ntwrk/midnight-js-types";
 import type { ConnectedWallet } from "./wallet";
 
-export const DEFAULT_NETWORK_ID = "preprod";
+export const DEFAULT_NETWORK_ID = "preview";
 
 export type AgentRegistryCircuitKey =
   | "register_agent"

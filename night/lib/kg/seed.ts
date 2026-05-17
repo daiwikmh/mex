@@ -6,7 +6,8 @@ const n = (
   label: string,
   attrs?: KgNode["attrs"],
   priv = false,
-): KgNode => ({ id, type, label, attrs, private: priv });
+  source?: KgNode["source"],
+): KgNode => ({ id, type, label, attrs, private: priv, source });
 
 const e = (
   id: string,
@@ -16,41 +17,41 @@ const e = (
 ): KgEdge => ({ id, type, from, to });
 
 const nodes: KgNode[] = [
-  n("c1", "Contact", "Sarah Chen",        { role: "CFO",          org: "Acme" }),
-  n("c2", "Contact", "Marcus Reid",       { role: "Partner",      org: "Lyra LLP" }),
-  n("c3", "Contact", "You",               { role: "Owner",        org: "—" }),
-  n("c4", "Contact", "Priya Shah",        { role: "Vendor lead",  org: "Halcyon" }),
-  n("c5", "Contact", "billing@stripe.com",{ role: "System",       org: "Stripe" }),
+  n("c1", "Contact", "Sarah Chen",         { role: "CFO",         org: "Acme Corp" }),
+  n("c2", "Contact", "Marcus Reid",        { role: "Partner",     org: "Lyra LLP" }),
+  n("c3", "Contact", "You",                { role: "Owner",       org: "" }),
+  n("c4", "Contact", "Priya Shah",         { role: "Vendor lead", org: "Halcyon" }),
+  n("c5", "Contact", "billing@stripe.com", { role: "System",      org: "Stripe" }),
 
-  n("e1", "Email", "Q4 invoice review"),
-  n("e2", "Email", "Halcyon vendor agreement"),
-  n("e3", "Email", "Re: Q4 invoice review"),
-  n("e4", "Email", "Stripe payment receipt"),
-  n("e5", "Email", "Acme service renewal"),
-  n("e6", "Email", "Lyra retainer Q1"),
-  n("e7", "Email", "Halcyon renewal"),
-  n("e8", "Email", "Personal: dinner thursday", undefined, true),
+  n("e1", "Email", "Q4 invoice review",      { date: "2026-05-12", subject: "invoice" },     false, "gmail"),
+  n("e2", "Email", "Halcyon vendor agreement",{ date: "2026-05-10", subject: "vendor" },     false, "gmail"),
+  n("e3", "Email", "Re: Q4 invoice review",  { date: "2026-05-13", subject: "invoice" },     false, "gmail"),
+  n("e4", "Email", "Stripe payment receipt", { date: "2026-05-08", subject: "receipt" },     false, "gmail"),
+  n("e5", "Email", "Acme service renewal",   { date: "2026-05-14", subject: "renewal" },     false, "gmail"),
+  n("e6", "Email", "Lyra retainer Q1",       { date: "2026-05-06", subject: "retainer" },    false, "gmail"),
+  n("e7", "Email", "Halcyon renewal",        { date: "2026-05-15", subject: "renewal" },     false, "gmail"),
+  n("e8", "Email", "Personal: dinner thursday",{ date: "2026-05-16" }, true, "gmail"),
 
-  n("i1", "Invoice", "INV-2487", { amount: 12500, due: "2026-06-01" }),
-  n("i2", "Invoice", "INV-2488", { amount: 8500,  due: "2026-06-14" }),
-  n("i3", "Invoice", "INV-2490", { amount: 12500, due: "2026-07-01" }),
-  n("i4", "Invoice", "INV-9001", { amount: 4500,  due: "2026-05-30" }),
-  n("i5", "Invoice", "INV-2502", { amount: 18000, due: "2026-07-12" }),
+  n("i1", "Invoice", "INV-2487", { amount: 12500, due: "2026-06-01", status: "open" },     false, "finance"),
+  n("i2", "Invoice", "INV-2488", { amount: 8500,  due: "2026-06-14", status: "open" },     false, "finance"),
+  n("i3", "Invoice", "INV-2490", { amount: 12500, due: "2026-07-01", status: "open" },     false, "finance"),
+  n("i4", "Invoice", "INV-9001", { amount: 4500,  due: "2026-05-30", status: "open" },     false, "finance"),
+  n("i5", "Invoice", "INV-2502", { amount: 18000, due: "2026-07-12", status: "pending" },  false, "finance"),
 
-  n("ch1", "Charge", "ch_3aB", { amount: 12500, status: "paid" }),
-  n("ch2", "Charge", "ch_3xY", { amount: 8500,  status: "paid" }),
-  n("ch3", "Charge", "ch_3pK", { amount: 4500,  status: "paid" }),
-  n("ch4", "Charge", "ch_3qM", { amount: 12500, status: "failed" }),
+  n("ch1", "Charge", "ch_3aB", { amount: 12500, status: "paid" },   false, "finance"),
+  n("ch2", "Charge", "ch_3xY", { amount: 8500,  status: "paid" },   false, "finance"),
+  n("ch3", "Charge", "ch_3pK", { amount: 4500,  status: "paid" },   false, "finance"),
+  n("ch4", "Charge", "ch_3qM", { amount: 12500, status: "failed" }, false, "finance"),
 
-  n("m1", "Meeting", "Quarterly billing review",  { start: "2026-05-19T14:00" }),
-  n("m2", "Meeting", "Lyra Q1 kickoff",           { start: "2026-05-21T10:00" }),
-  n("m3", "Meeting", "Halcyon renewal",           { start: "2026-05-24T15:30" }),
-  n("m4", "Meeting", "Personal: physio",          { start: "2026-05-20T08:00" }, true),
+  n("m1", "Meeting", "Quarterly billing review",  { start: "2026-05-19T14:00", attendees: "3" }, false, "calendar"),
+  n("m2", "Meeting", "Lyra Q1 kickoff",           { start: "2026-05-21T10:00", attendees: "2" }, false, "calendar"),
+  n("m3", "Meeting", "Halcyon renewal",           { start: "2026-05-24T15:30", attendees: "2" }, false, "calendar"),
+  n("m4", "Meeting", "Personal: physio",          { start: "2026-05-20T08:00" }, true, "calendar"),
 
-  n("d1", "Document", "Acme MSA v3"),
-  n("d2", "Document", "Halcyon SOW"),
-  n("d3", "Document", "Lyra retainer agreement"),
-  n("d4", "Document", "Personal: tax notes", undefined, true),
+  n("d1", "Document", "Acme MSA v3",               { pages: 24, type: "contract" }, false, "drive"),
+  n("d2", "Document", "Halcyon SOW",               { pages: 12, type: "contract" }, false, "drive"),
+  n("d3", "Document", "Lyra retainer agreement",   { pages: 8,  type: "contract" }, false, "drive"),
+  n("d4", "Document", "Personal: tax notes",       { pages: 3 }, true, "drive"),
 ];
 
 const edges: KgEdge[] = [

@@ -7,8 +7,6 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "deploy": "tsx scripts/deploy.ts",
-    "deploy:preview": "tsx scripts/deploy.ts --network preview",
     "proof-server": "docker run -p 6300:6300 midnightntwrk/proof-server:8.1.0 -- midnight-proof-server -v"
   },
   "dependencies": {

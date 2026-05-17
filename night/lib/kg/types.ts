@@ -16,12 +16,15 @@ export type EdgeType =
   | "follows_up"
   | "paid";
 
+export type SourceType = "gmail" | "calendar" | "finance" | "drive";
+
 export interface KgNode {
   id: string;
   type: NodeType;
   label: string;
   attrs?: Record<string, string | number>;
   private?: boolean;
+  source?: SourceType;
 }
 
 export interface KgEdge {
