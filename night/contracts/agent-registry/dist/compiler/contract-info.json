@@ -1,0 +1,271 @@
+{
+  "compiler-version": "0.31.0",
+  "language-version": "0.23.0",
+  "runtime-version": "0.16.0",
+  "circuits": [
+    {
+      "name": "register_agent",
+      "pure": false,
+      "proof": true,
+      "arguments": [
+        {
+          "name": "agent_id",
+          "type": {
+            "type-name": "Bytes",
+            "length": 32
+          }
+        },
+        {
+          "name": "owner_commitment",
+          "type": {
+            "type-name": "Bytes",
+            "length": 32
+          }
+        }
+      ],
+      "result-type": {
+        "type-name": "Tuple",
+        "types": [
+        ]
+      }
+    },
+    {
+      "name": "set_policy",
+      "pure": false,
+      "proof": true,
+      "arguments": [
+        {
+          "name": "agent_id",
+          "type": {
+            "type-name": "Bytes",
+            "length": 32
+          }
+        },
+        {
+          "name": "scope_hash",
+          "type": {
+            "type-name": "Bytes",
+            "length": 32
+          }
+        },
+        {
+          "name": "policy_hash",
+          "type": {
+            "type-name": "Bytes",
+            "length": 32
+          }
+        },
+        {
+          "name": "expiry",
+          "type": {
+            "type-name": "Uint",
+            "maxval": 18446744073709551615
+          }
+        },
+        {
+          "name": "max_queries",
+          "type": {
+            "type-name": "Uint",
+            "maxval": 4294967295
+          }
+        }
+      ],
+      "result-type": {
+        "type-name": "Tuple",
+        "types": [
+        ]
+      }
+    },
+    {
+      "name": "log_query",
+      "pure": false,
+      "proof": true,
+      "arguments": [
+        {
+          "name": "agent_id",
+          "type": {
+            "type-name": "Bytes",
+            "length": 32
+          }
+        },
+        {
+          "name": "query_hash",
+          "type": {
+            "type-name": "Bytes",
+            "length": 32
+          }
+        },
+        {
+          "name": "result_commitment",
+          "type": {
+            "type-name": "Bytes",
+            "length": 32
+          }
+        },
+        {
+          "name": "ts",
+          "type": {
+            "type-name": "Uint",
+            "maxval": 18446744073709551615
+          }
+        }
+      ],
+      "result-type": {
+        "type-name": "Tuple",
+        "types": [
+        ]
+      }
+    },
+    {
+      "name": "revoke_agent",
+      "pure": false,
+      "proof": true,
+      "arguments": [
+        {
+          "name": "agent_id",
+          "type": {
+            "type-name": "Bytes",
+            "length": 32
+          }
+        }
+      ],
+      "result-type": {
+        "type-name": "Tuple",
+        "types": [
+        ]
+      }
+    }
+  ],
+  "witnesses": [
+  ],
+  "contracts": [
+  ],
+  "ledger": [
+    {
+      "name": "agents",
+      "index": 0,
+      "exported": true,
+      "storage": "Map",
+      "key": {
+        "type-name": "Bytes",
+        "length": 32
+      },
+      "value": {
+        "type-name": "Struct",
+        "name": "Agent",
+        "elements": [
+          {
+            "name": "registered",
+            "type": {
+              "type-name": "Boolean"
+            }
+          },
+          {
+            "name": "owner_commitment",
+            "type": {
+              "type-name": "Bytes",
+              "length": 32
+            }
+          },
+          {
+            "name": "scope_hash",
+            "type": {
+              "type-name": "Bytes",
+              "length": 32
+            }
+          },
+          {
+            "name": "policy_hash",
+            "type": {
+              "type-name": "Bytes",
+              "length": 32
+            }
+          },
+          {
+            "name": "expiry",
+            "type": {
+              "type-name": "Uint",
+              "maxval": 18446744073709551615
+            }
+          },
+          {
+            "name": "max_queries",
+            "type": {
+              "type-name": "Uint",
+              "maxval": 4294967295
+            }
+          },
+          {
+            "name": "queries_used",
+            "type": {
+              "type-name": "Uint",
+              "maxval": 4294967295
+            }
+          },
+          {
+            "name": "revoked",
+            "type": {
+              "type-name": "Boolean"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "receipts",
+      "index": 1,
+      "exported": true,
+      "storage": "Map",
+      "key": {
+        "type-name": "Bytes",
+        "length": 32
+      },
+      "value": {
+        "type-name": "Struct",
+        "name": "QueryReceipt",
+        "elements": [
+          {
+            "name": "agent_id",
+            "type": {
+              "type-name": "Bytes",
+              "length": 32
+            }
+          },
+          {
+            "name": "query_hash",
+            "type": {
+              "type-name": "Bytes",
+              "length": 32
+            }
+          },
+          {
+            "name": "result_commitment",
+            "type": {
+              "type-name": "Bytes",
+              "length": 32
+            }
+          },
+          {
+            "name": "ts",
+            "type": {
+              "type-name": "Uint",
+              "maxval": 18446744073709551615
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "total_queries",
+      "index": 2,
+      "exported": true,
+      "storage": "Counter"
+    },
+    {
+      "name": "total_registered",
+      "index": 3,
+      "exported": true,
+      "storage": "Counter"
+    }
+  ]
+}

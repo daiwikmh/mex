@@ -5,7 +5,7 @@ const quotes = [
     role: "Operations lead, mid-stage fintech",
   },
   {
-    body: "Every assistant I have used kept context I never authorized. With Nocturne the policy is a transaction. If it reads something out of scope, the chain rejects the receipt. That is what I have been asking for.",
+    body: "Every assistant I have used kept context I never authorized. With Omnis the policy is a transaction. If it reads something out of scope, the chain rejects the receipt. That is what I have been asking for.",
     name: "Marcus O.",
     role: "Privacy-conscious power user",
   },

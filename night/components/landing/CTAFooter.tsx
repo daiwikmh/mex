@@ -34,7 +34,7 @@ export function CTAFooter() {
         <footer className="mt-12 flex flex-col items-center justify-between gap-6 pt-8 text-sm sm:flex-row" style={{ borderTop: "1px solid rgba(13, 13, 13, 0.18)", color: "rgba(13, 13, 13, 0.65)" }}>
           <div className="flex items-center gap-2">
             <span className="inline-block h-2 w-2 rounded-full" style={{ background: "#0f5a37" }} />
-            <span className="font-mono">nocturne · revocable agents on midnight</span>
+            <span className="font-mono">Omnis · revocable agents on midnight</span>
           </div>
           <div className="flex items-center gap-6">
             <a href="#" className="hover:underline">GitHub</a>

@@ -1,0 +1,139 @@
+// AgentRegistry — revocable delegated AI agents on Midnight.
+// Owner registers an agent identity, binds a scoped policy, the agent records
+// query receipts under that policy, and the owner can revoke at any time.
+
+pragma language_version >= 0.20;
+
+import CompactStandardLibrary;
+
+export struct Agent {
+  registered: Boolean,
+  owner_commitment: Bytes<32>,
+  scope_hash: Bytes<32>,
+  policy_hash: Bytes<32>,
+  expiry: Uint<64>,
+  max_queries: Uint<32>,
+  queries_used: Uint<32>,
+  revoked: Boolean,
+}
+
+export struct QueryReceipt {
+  agent_id: Bytes<32>,
+  query_hash: Bytes<32>,
+  result_commitment: Bytes<32>,
+  ts: Uint<64>,
+}
+
+export ledger agents: Map<Bytes<32>, Agent>;
+export ledger receipts: Map<Bytes<32>, QueryReceipt>;
+export ledger total_queries: Counter;
+export ledger total_registered: Counter;
+
+constructor() {
+  total_queries.increment(0);
+  total_registered.increment(0);
+}
+
+// Register a fresh agent. The id is a pubkey-like commitment the owner controls.
+// owner_commitment is a hash that ties this agent to its owner without leaking
+// the wallet pubkey.
+export circuit register_agent(
+  agent_id: Bytes<32>,
+  owner_commitment: Bytes<32>
+): [] {
+  assert(!agents.member(disclose(agent_id)), "Agent already registered");
+  const fresh = Agent {
+    registered: true,
+    owner_commitment: disclose(owner_commitment),
+    scope_hash: pad(32, ""),
+    policy_hash: pad(32, ""),
+    expiry: 0 as Uint<64>,
+    max_queries: 0 as Uint<32>,
+    queries_used: 0 as Uint<32>,
+    revoked: false,
+  };
+  agents.insert(disclose(agent_id), fresh);
+  total_registered.increment(1);
+}
+
+// Bind a scoped policy. scope_hash describes the allowed sources / filters /
+// actions; policy_hash is a content hash of the full policy spec. Both are
+// off-chain artifacts whose content can be revealed selectively.
+export circuit set_policy(
+  agent_id: Bytes<32>,
+  scope_hash: Bytes<32>,
+  policy_hash: Bytes<32>,
+  expiry: Uint<64>,
+  max_queries: Uint<32>
+): [] {
+  assert(agents.member(disclose(agent_id)), "Agent does not exist");
+  const a = agents.lookup(disclose(agent_id));
+  assert(!a.revoked, "Agent already revoked");
+  const updated = Agent {
+    registered: a.registered,
+    owner_commitment: a.owner_commitment,
+    scope_hash: disclose(scope_hash),
+    policy_hash: disclose(policy_hash),
+    expiry: disclose(expiry),
+    max_queries: disclose(max_queries),
+    queries_used: a.queries_used,
+    revoked: a.revoked,
+  };
+  agents.insert(disclose(agent_id), updated);
+}
+
+// Record a query receipt. The chain enforces: agent exists, not revoked,
+// quota not exhausted, policy not expired. Raw query and result stay private.
+export circuit log_query(
+  agent_id: Bytes<32>,
+  query_hash: Bytes<32>,
+  result_commitment: Bytes<32>,
+  ts: Uint<64>
+): [] {
+  assert(agents.member(disclose(agent_id)), "Agent does not exist");
+  const a = agents.lookup(disclose(agent_id));
+  assert(!a.revoked, "Agent revoked");
+  assert(a.queries_used < a.max_queries, "Quota exhausted");
+  assert(disclose(ts) <= a.expiry, "Policy expired");
+  assert(!receipts.member(disclose(query_hash)), "Query already recorded");
+
+  const receipt = QueryReceipt {
+    agent_id: disclose(agent_id),
+    query_hash: disclose(query_hash),
+    result_commitment: disclose(result_commitment),
+    ts: disclose(ts),
+  };
+  receipts.insert(disclose(query_hash), receipt);
+
+  const updated = Agent {
+    registered: a.registered,
+    owner_commitment: a.owner_commitment,
+    scope_hash: a.scope_hash,
+    policy_hash: a.policy_hash,
+    expiry: a.expiry,
+    max_queries: a.max_queries,
+    queries_used: (a.queries_used + 1) as Uint<32>,
+    revoked: a.revoked,
+  };
+  agents.insert(disclose(agent_id), updated);
+  total_queries.increment(1);
+}
+
+// Owner kills the agent. Subsequent log_query calls will assert-fail at the
+// !revoked check.
+export circuit revoke_agent(agent_id: Bytes<32>): [] {
+  assert(agents.member(disclose(agent_id)), "Agent does not exist");
+  const a = agents.lookup(disclose(agent_id));
+  assert(!a.revoked, "Agent already revoked");
+  const updated = Agent {
+    registered: a.registered,
+    owner_commitment: a.owner_commitment,
+    scope_hash: a.scope_hash,
+    policy_hash: a.policy_hash,
+    expiry: a.expiry,
+    max_queries: a.max_queries,
+    queries_used: a.queries_used,
+    revoked: true,
+  };
+  agents.insert(disclose(agent_id), updated);
+}

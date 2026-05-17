@@ -1,8 +1,8 @@
 import { AppShell } from "@/components/app/AppShell";
-import { GraphTab } from "@/components/app/GraphTab";
+import { KgConsole } from "@/components/app/KgConsole";
 
 export const metadata = {
-  title: "Knowledge graph — Nocturne",
+  title: "Knowledge graph — Omnis",
 };
 
 export default function GraphPage() {
@@ -13,16 +13,18 @@ export default function GraphPage() {
           Knowledge graph
         </div>
         <h1 className="font-serif text-4xl tracking-tight sm:text-5xl">
-          Your financial graph.{" "}
-          <span className="text-foreground/55">Compounds with every upload.</span>
+          The world the agent sees.{" "}
+          <span className="text-foreground/55">Bounded by typed scope.</span>
         </h1>
         <p className="max-w-2xl text-foreground/70">
-          Typed entities and relationships extracted from your bank statements.
-          The underwriting agent reads from this graph. The ZK proof attests over
-          its properties. None of the raw transactions ever leave your browser.
+          Your data is a typed graph: emails, contacts, invoices, charges,
+          meetings, documents. The agent&apos;s scope is a structural capability
+          over this graph. Out-of-scope nodes and edges are rejected in the
+          TEE before the query ever reaches Midnight. The hash of the scope
+          is what your wallet signs.
         </p>
       </header>
-      <GraphTab />
+      <KgConsole />
     </AppShell>
   );
 }

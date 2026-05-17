@@ -10,8 +10,8 @@ export default function ActivityPage() {
   useEffect(() => {
     setQueries(readQueries());
     const refresh = () => setQueries(readQueries());
-    window.addEventListener("nocturne:queries-change", refresh);
-    return () => window.removeEventListener("nocturne:queries-change", refresh);
+    window.addEventListener("Omnis:queries-change", refresh);
+    return () => window.removeEventListener("Omnis:queries-change", refresh);
   }, []);
 
   const sorted = [...queries].sort((a, b) => b.ts - a.ts);

@@ -1,91 +1,75 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { AppShell } from "@/components/app/AppShell";
-import { readVault, readResult, type VaultState } from "@/lib/store";
-import { readGraph, type FinancialGraph } from "@/lib/graph";
-import type { UnderwritingResult } from "@/lib/mock";
+import { useStoredAgent, useStoredQueries } from "@/lib/agents";
+import { getNode } from "@/lib/kg/seed";
 
 interface AuditEvent {
-  kind: "vault" | "graph" | "underwriting" | "proof" | "policy";
+  kind: "register" | "policy" | "query" | "rejection" | "revoke";
   ts: number;
   title: string;
   body: string;
   meta?: Array<{ label: string; value: string }>;
+  subgraph?: { nodes: string[]; edges: string[] };
+  abortReason?: string | null;
 }
 
 export default function AuditPage() {
-  const [vault, setVault] = useState<VaultState | null>(null);
-  const [result, setResult] = useState<UnderwritingResult | null>(null);
-  const [graph, setGraph] = useState<FinancialGraph | null>(null);
-
-  useEffect(() => {
-    const refresh = () => {
-      setVault(readVault());
-      setResult(readResult());
-      setGraph(readGraph());
-    };
-    refresh();
-    window.addEventListener("nocturne:vault-change", refresh);
-    window.addEventListener("nocturne:result-change", refresh);
-    window.addEventListener("nocturne:graph-change", refresh);
-    return () => {
-      window.removeEventListener("nocturne:vault-change", refresh);
-      window.removeEventListener("nocturne:result-change", refresh);
-      window.removeEventListener("nocturne:graph-change", refresh);
-    };
-  }, []);
+  const agent = useStoredAgent();
+  const queries = useStoredQueries();
 
   const events: AuditEvent[] = [];
-  if (vault) {
+  if (agent) {
     events.push({
-      kind: "vault",
-      ts: vault.registeredAt,
-      title: "Vault registered on Midnight",
-      body: `${vault.fileName} · ${(vault.byteLength / 1024).toFixed(1)} KB ciphertext, local-only`,
+      kind: "register",
+      ts: agent.registeredAt,
+      title: "Agent registered on Midnight",
+      body: `${agent.agentLabel} · owner committed`,
       meta: [
-        { label: "ciphertext hash", value: vault.ciphertextHash },
-        { label: "commitment", value: vault.commitment },
+        { label: "agent id",         value: agent.agentId },
+        { label: "register tx",      value: agent.registerTxHash ?? "—" },
       ],
     });
     events.push({
       kind: "policy",
-      ts: vault.registeredAt,
-      title: "Access policy set",
-      body: `${vault.policy.queryTypes.join(", ")} · max ${vault.policy.maxUsesPerWeek}/wk · min $${vault.policy.minRoyalty.toFixed(2)} royalty`,
-    });
-  }
-  if (graph) {
-    events.push({
-      kind: "graph",
-      ts: graph.source.createdAt,
-      title: "Financial graph extracted",
-      body: `${graph.nodes.length} typed entities · ${graph.edges.length} relationships from ${graph.source.rowCount} CSV rows`,
-    });
-  }
-  if (result) {
-    events.push({
-      kind: "underwriting",
-      ts: Date.now(),
-      title: "TEE underwriting attested",
-      body: `Score ${result.score} · DSR ${(result.debtServiceRatio * 100).toFixed(1)}% · cohort ${result.cohortSize}`,
+      ts: agent.registeredAt,
+      title: "Typed-graph scope bound to agent",
+      body: agent.policy.kgScope
+        ? `nodes [${agent.policy.kgScope.nodes.join(", ")}] · depth ${agent.policy.kgScope.maxDepth} · max ${agent.policy.maxQueries} queries`
+        : `${agent.policy.scopes.length} scope${agent.policy.scopes.length === 1 ? "" : "s"} · max ${agent.policy.maxQueries} queries`,
       meta: [
-        { label: "TEE attestation", value: result.attestation },
-        { label: "reasoning hash", value: result.reasoningHash },
+        { label: "policy hash", value: agent.policyHash },
+        { label: "scope hash",  value: agent.scopeHash ?? "—" },
+        { label: "expiry",      value: new Date(agent.policy.expiryMs).toISOString() },
       ],
     });
+    if (agent.revokedAt !== null) {
+      events.push({
+        kind: "revoke",
+        ts: agent.revokedAt,
+        title: "Agent revoked on chain",
+        body: "Authorization checks now fail for this agent id",
+        meta: [{ label: "agent id", value: agent.agentId }],
+      });
+    }
+  }
+  for (const q of queries) {
     events.push({
-      kind: "proof",
-      ts: Date.now(),
-      title: "ZK ScoreProof issued",
-      body: `Asserts score ≥ threshold without revealing transactions`,
+      kind: q.allowed ? "query" : "rejection",
+      ts: q.ts,
+      title: q.allowed ? "Query receipt logged" : "Out-of-scope traversal blocked",
+      body: q.queryLabel,
       meta: [
-        { label: "proof commitment", value: result.reasoningHash },
-        { label: "income bucket", value: result.monthlyIncomeBucket },
+        { label: "query hash",        value: q.queryHash },
+        { label: "result commitment", value: q.resultCommitment },
+        { label: "tx",                value: q.txHash ?? "—" },
       ],
+      subgraph: q.visitedNodeIds && q.visitedEdgeIds
+        ? { nodes: q.visitedNodeIds, edges: q.visitedEdgeIds }
+        : undefined,
+      abortReason: q.abortReason ?? null,
     });
   }
-
   events.sort((a, b) => b.ts - a.ts);
 
   return (
@@ -99,22 +83,23 @@ export default function AuditPage() {
           <span className="text-foreground/55">In one place.</span>
         </h1>
         <p className="max-w-2xl text-foreground/70">
-          TEE attestations, ZK proof commitments, vault registrations, policy
-          changes. The complete provenance trail for every interaction with
-          your private data.
+          Agent registrations, scope commitments, traversal receipts and
+          revocations. Each query carries the typed subgraph it visited — the
+          provenance trail you can show a regulator without leaking what the
+          agent actually saw.
         </p>
       </header>
 
       <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <Stat label="Vaults" value={vault ? "1" : "0"} />
-        <Stat label="Entities" value={graph ? String(graph.nodes.length) : "0"} />
-        <Stat label="Attestations" value={result ? "1" : "0"} />
-        <Stat label="ZK proofs" value={result ? "1" : "0"} />
+        <Stat label="Agents"      value={agent ? "1" : "0"} />
+        <Stat label="Queries"     value={String(queries.filter((q) => q.allowed).length)} />
+        <Stat label="Rejections"  value={String(queries.filter((q) => !q.allowed).length)} />
+        <Stat label="Revoked"     value={agent?.revokedAt ? "1" : "0"} />
       </div>
 
       {events.length === 0 ? (
         <div className="rounded-2xl border border-foreground/15 bg-surface p-6 font-mono text-sm text-foreground/55">
-          No events yet. Upload a CSV on the Dashboard tab to start the trail.
+          No events yet. Register an agent on the Agents page to start the trail.
         </div>
       ) : (
         <ol className="space-y-3">
@@ -130,6 +115,11 @@ export default function AuditPage() {
               </div>
               <div className="mt-1.5 text-base font-medium text-foreground">{e.title}</div>
               <div className="mt-1 text-sm text-foreground/70">{e.body}</div>
+              {e.abortReason && (
+                <div className="mt-2 rounded-md border border-[#a4262c]/40 bg-[#a4262c]/[0.06] px-3 py-2 font-mono text-[11px] text-[#a4262c]">
+                  TEE rejected: {e.abortReason}
+                </div>
+              )}
               {e.meta && e.meta.length > 0 && (
                 <dl className="mt-3 grid grid-cols-1 gap-2 font-mono text-[11px] sm:grid-cols-2">
                   {e.meta.map((m) => (
@@ -144,6 +134,30 @@ export default function AuditPage() {
                     </div>
                   ))}
                 </dl>
+              )}
+              {e.subgraph && e.subgraph.nodes.length > 0 && (
+                <div className="mt-3 rounded-md border border-foreground/10 bg-surface-2 p-3">
+                  <div className="font-mono text-[10px] uppercase tracking-widest text-foreground/45">
+                    Visited subgraph
+                  </div>
+                  <div className="mt-1.5 flex flex-wrap gap-1 font-mono text-[10px]">
+                    {e.subgraph.nodes.map((id) => {
+                      const node = getNode(id);
+                      return (
+                        <span
+                          key={id}
+                          className="rounded border border-foreground/20 bg-surface px-1.5 py-0.5 text-foreground/85"
+                          title={node?.label}
+                        >
+                          {node ? `${node.type}:${node.label}` : id}
+                        </span>
+                      );
+                    })}
+                  </div>
+                  <div className="mt-1.5 font-mono text-[10px] text-foreground/45">
+                    {e.subgraph.nodes.length} nodes · {e.subgraph.edges.length} edges
+                  </div>
+                </div>
               )}
             </li>
           ))}
@@ -166,10 +180,10 @@ function Stat({ label, value }: { label: string; value: string }) {
 
 function kindLabel(k: AuditEvent["kind"]): string {
   switch (k) {
-    case "vault": return "VAULT REGISTER";
-    case "graph": return "GRAPH EXTRACT";
-    case "underwriting": return "TEE UNDERWRITE";
-    case "proof": return "ZK PROOF";
-    case "policy": return "POLICY";
+    case "register":  return "AGENT REGISTER";
+    case "policy":    return "POLICY";
+    case "query":     return "QUERY RECEIPT";
+    case "rejection": return "REJECTED";
+    case "revoke":    return "REVOKE";
   }
 }

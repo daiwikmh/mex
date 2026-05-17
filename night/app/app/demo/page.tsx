@@ -38,8 +38,8 @@ export default function DemoPage() {
   useEffect(() => {
     setAgent(readAgent());
     const refresh = () => setAgent(readAgent());
-    window.addEventListener("nocturne:agent-change", refresh);
-    return () => window.removeEventListener("nocturne:agent-change", refresh);
+    window.addEventListener("Omnis:agent-change", refresh);
+    return () => window.removeEventListener("Omnis:agent-change", refresh);
   }, []);
 
   const scenario = SCENARIOS.find((s) => s.id === scenarioId) ?? SCENARIOS[0];

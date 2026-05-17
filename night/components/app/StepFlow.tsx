@@ -5,7 +5,7 @@ import { AnimatePresence, motion } from "motion/react";
 export type Step = {
   id: string;
   label: string;
-  status: "pending" | "active" | "done";
+  status: "pending" | "active" | "done" | "error";
 };
 
 export function StepFlow({ steps }: { steps: Step[] }) {
@@ -30,6 +30,8 @@ export function StepFlow({ steps }: { steps: Step[] }) {
                 className={`flex items-center gap-3 rounded-lg border px-3 py-2 text-sm ${
                   s.status === "done"
                     ? "border-emerald-500/30 bg-emerald-500/[0.06] text-foreground"
+                    : s.status === "error"
+                    ? "border-red-500/40 bg-red-500/[0.07] text-foreground"
                     : s.status === "active"
                     ? "border-accent-strong/40 bg-accent-strong/[0.08] text-foreground"
                     : "border-border bg-surface-2 text-foreground/55"
@@ -51,6 +53,13 @@ function StatusDot({ status }: { status: Step["status"] }) {
     return (
       <span className="flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500/80 text-[10px] text-background">
         ✓
+      </span>
+    );
+  }
+  if (status === "error") {
+    return (
+      <span className="flex h-4 w-4 items-center justify-center rounded-full bg-red-500/80 text-[10px] text-background">
+        ×
       </span>
     );
   }

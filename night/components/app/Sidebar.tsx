@@ -10,6 +10,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { WalletChip } from "./WalletChip";
 
 interface NavItem {
   href: string;
@@ -18,14 +19,15 @@ interface NavItem {
 }
 
 const NAV: NavItem[] = [
-  { href: "/app/vault", label: "Dashboard",   letter: "D" },
-  { href: "/app/graph", label: "Graph",       letter: "G" },
-  { href: "/app/earn",  label: "Earn",        letter: "E" },
-  { href: "/app/lend",  label: "Lender demo", letter: "L" },
-  { href: "/app/audit", label: "Audit",       letter: "A" },
+  { href: "/app/agents",   label: "Agents",   letter: "A" },
+  { href: "/app/policies", label: "Policies", letter: "P" },
+  { href: "/app/graph",    label: "Graph",    letter: "G" },
+  { href: "/app/activity", label: "Activity", letter: "Q" },
+  { href: "/app/demo",     label: "Demo",     letter: "D" },
+  { href: "/app/audit",    label: "Audit",    letter: "U" },
 ];
 
-const STORAGE_KEY = "nocturne:sidebar-collapsed";
+const STORAGE_KEY = "Omnis:sidebar-collapsed";
 
 interface SidebarContextValue {
   collapsed: boolean;
@@ -100,7 +102,7 @@ export function Sidebar() {
         >
           <span className="inline-block h-3 w-3 rounded-sm border-2 border-foreground" />
           {!collapsed && (
-            <span className="font-serif text-lg text-foreground">Nocturne</span>
+            <span className="font-serif text-lg text-foreground">Omnis</span>
           )}
         </Link>
       </div>
@@ -139,17 +141,7 @@ export function Sidebar() {
             collapsed ? "flex-col gap-2 py-3" : "justify-between px-4 py-3"
           }`}
         >
-          <div className={`flex items-center gap-2 ${collapsed ? "" : "min-w-0"}`}>
-            <span
-              className="shrink-0 w-1.5 h-1.5 rounded-full bg-emerald-700 animate-pulse"
-              title="midnight-testnet"
-            />
-            {!collapsed && (
-              <span className="text-foreground/60 uppercase tracking-widest truncate">
-                midnight · live
-              </span>
-            )}
-          </div>
+          <WalletChip compact={collapsed} />
           <button
             onClick={toggle}
             className="hidden md:flex items-center text-foreground/55 hover:text-foreground transition-colors shrink-0"
