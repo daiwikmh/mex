@@ -3,16 +3,13 @@
 import { useEffect, useState } from "react";
 import { mockUnderwriting, shortHash, sleep, type UnderwritingResult } from "@/lib/mock";
 import { readResult, readVault, writeResult, writeVault, type VaultState } from "@/lib/store";
+import { buildGraph, parseBankCsv, writeGraph } from "@/lib/graph";
 import { Dropzone } from "./Dropzone";
 import { StepFlow, type Step } from "./StepFlow";
 import { ResultPanel } from "./ResultPanel";
-import { ContributorPanel } from "./ContributorPanel";
 import { Button } from "@/components/ui/Button";
 
-type Tab = "borrow" | "earn";
-
 export function VaultPortal() {
-  const [tab, setTab] = useState<Tab>("borrow");
   const [vault, setVault] = useState<VaultState | null>(null);
   const [result, setResult] = useState<UnderwritingResult | null>(null);
   const [running, setRunning] = useState(false);
@@ -38,6 +35,7 @@ export function VaultPortal() {
 
     const baseSteps: Step[] = [
       { id: "read", label: "Parse Plaid CSV in browser", status: "active" },
+      { id: "graph", label: "Extract typed financial graph (entities + edges)", status: "pending" },
       { id: "encrypt", label: "AES-GCM encrypt with wallet-derived key", status: "pending" },
       { id: "store", label: "Persist ciphertext to IndexedDB", status: "pending" },
       { id: "register", label: "Register commitment on Midnight", status: "pending" },
@@ -45,15 +43,27 @@ export function VaultPortal() {
     setSteps(baseSteps);
 
     const buf = await file.arrayBuffer();
-    await sleep(420);
+    const text = new TextDecoder().decode(buf);
+    await sleep(320);
     setSteps((s) =>
       setStatus(s, [
         ["read", "done"],
+        ["graph", "active"],
+      ]),
+    );
+
+    const rows = parseBankCsv(text);
+    const graph = buildGraph(rows, file.name);
+    writeGraph(graph);
+    await sleep(520);
+    setSteps((s) =>
+      setStatus(s, [
+        ["graph", "done"],
         ["encrypt", "active"],
       ]),
     );
 
-    await sleep(620);
+    await sleep(520);
     const cipherHash = shortHash(`${file.name}:${buf.byteLength}`);
     setSteps((s) =>
       setStatus(s, [
@@ -62,7 +72,7 @@ export function VaultPortal() {
       ]),
     );
 
-    await sleep(380);
+    await sleep(320);
     setSteps((s) =>
       setStatus(s, [
         ["store", "done"],
@@ -70,7 +80,7 @@ export function VaultPortal() {
       ]),
     );
 
-    await sleep(680);
+    await sleep(560);
     const commitment = shortHash(`commit:${cipherHash}`);
     const v: VaultState = {
       fileName: file.name,
@@ -138,36 +148,29 @@ export function VaultPortal() {
   function reset() {
     writeVault(null);
     writeResult(null);
+    writeGraph(null);
     setSteps([]);
   }
 
   return (
     <div className="flex flex-col gap-10">
       <header className="flex flex-col gap-3">
-        <div className="font-mono text-xs uppercase tracking-widest text-foreground/40">
-          Borrower + contributor portal
+        <div className="font-mono text-xs uppercase tracking-widest text-foreground/50">
+          Dashboard
         </div>
-        <h1 className="text-3xl font-semibold tracking-[-0.02em] sm:text-5xl">
+        <h1 className="font-serif text-4xl tracking-tight sm:text-5xl">
           Your vault.{" "}
           <span className="text-foreground/55">Your terms. Your yield.</span>
         </h1>
-        <p className="max-w-2xl text-foreground/65">
-          Drop a Plaid CSV export. We encrypt locally, register a commitment on
-          Midnight, and request an attested underwriting from the TEE. The lender
-          gets a ZK proof — never the raw data.
+        <p className="max-w-2xl text-foreground/70">
+          Drop a Plaid CSV export. We extract a typed financial graph, encrypt
+          the source locally, register a commitment on Midnight, and request
+          an attested underwriting from the TEE. The lender gets a ZK proof
+          &mdash; never the raw data.
         </p>
       </header>
 
-      <div className="inline-flex w-fit gap-1 rounded-full border border-border bg-surface p-1">
-        <TabButton active={tab === "borrow"} onClick={() => setTab("borrow")}>
-          Borrow
-        </TabButton>
-        <TabButton active={tab === "earn"} onClick={() => setTab("earn")}>
-          Earn as contributor
-        </TabButton>
-      </div>
-
-      {tab === "borrow" ? (
+      {(
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1.1fr_1fr]">
           <div className="flex flex-col gap-6">
             {!vault ? (
@@ -205,33 +208,8 @@ export function VaultPortal() {
             <NetworkLog vault={vault} result={result} />
           </div>
         </div>
-      ) : (
-        <ContributorPanel vault={vault} />
       )}
     </div>
-  );
-}
-
-function TabButton({
-  active,
-  onClick,
-  children,
-}: {
-  active: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className={`rounded-full px-4 py-1.5 text-sm transition-colors ${
-        active
-          ? "bg-foreground text-background"
-          : "text-foreground/70 hover:text-foreground"
-      }`}
-    >
-      {children}
-    </button>
   );
 }
 

@@ -11,32 +11,3 @@ export function shortHash(seed: string): string {
 export function sleep(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms));
 }
-
-export type UnderwritingResult = {
-  score: number;
-  monthlyIncomeBucket: string;
-  debtServiceRatio: number;
-  reasoningHash: string;
-  cohortSize: number;
-  attestation: string;
-  cohortPubkeys: string[];
-};
-
-export function mockUnderwriting(seed: string): UnderwritingResult {
-  const base = shortHash(seed);
-  const score = 660 + ((parseInt(base.slice(2, 6), 16) % 180) | 0);
-  const dsr = 0.18 + ((parseInt(base.slice(6, 10), 16) % 28) / 100);
-  return {
-    score,
-    monthlyIncomeBucket: ["$3–5k", "$5–8k", "$8–12k", "$12–20k"][
-      parseInt(base.slice(10, 14), 16) % 4
-    ],
-    debtServiceRatio: Math.round(dsr * 100) / 100,
-    reasoningHash: shortHash(`${seed}:reasoning`),
-    cohortSize: 50,
-    attestation: shortHash(`${seed}:attestation`).replace("0x", "att_"),
-    cohortPubkeys: Array.from({ length: 5 }, (_, i) =>
-      shortHash(`${seed}:cohort:${i}`),
-    ),
-  };
-}

@@ -1,14 +1,14 @@
 @import "tailwindcss";
 
 :root {
-  --background: #0a0a0c;
-  --foreground: #f5f5f7;
-  --muted: #8a8a93;
-  --border: rgba(255, 255, 255, 0.08);
-  --accent: #b6c2ff;
-  --accent-strong: #6e7cff;
-  --surface: #111114;
-  --surface-2: #16161b;
+  --background: #e8f0d8;        /* pale sage */
+  --foreground: #0d0d0d;         /* near-black */
+  --muted: #6a6a5a;
+  --border: rgba(13, 13, 13, 0.12);
+  --accent: #0f5a37;             /* forest green */
+  --accent-strong: #0f5a37;
+  --surface: #f4f6e6;            /* warm off-white cards */
+  --surface-2: #eef2dc;
 }
 
 @theme inline {
@@ -61,17 +61,21 @@ html.lenis body {
 
 .grid-bg {
   background-image:
-    linear-gradient(to right, rgba(255, 255, 255, 0.04) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+    linear-gradient(to right, rgba(13, 13, 13, 0.04) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(13, 13, 13, 0.04) 1px, transparent 1px);
   background-size: 56px 56px;
 }
 
 .radial-fade {
   background: radial-gradient(
     1100px 600px at 50% 0%,
-    rgba(110, 124, 255, 0.18),
+    rgba(255, 255, 255, 0.4),
     transparent 60%
   );
+}
+
+.font-serif {
+  font-family: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
 }
 
 @media (prefers-reduced-motion: reduce) {

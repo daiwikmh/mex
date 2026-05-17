@@ -1,16 +1,16 @@
 const quotes = [
   {
-    body: "We had to choose: stop offering uncollateralized lines or get sued for storing every borrower&apos;s statement. Nocturne is the only thing I&apos;ve seen that lets us underwrite without warehousing.",
+    body: "I want an agent that handles invoices and travel. I do not want to mint a permanent OAuth token to a startup that will be acquired in eighteen months. A revocable scope I can read on chain is the only version of this I would deploy.",
     name: "Priya N.",
-    role: "Risk lead, undercollateralized DeFi protocol",
+    role: "Operations lead, mid-stage fintech",
   },
   {
-    body: "I&apos;m not handing PDF statements to a startup. The TEE attestation plus the ZK score is the first version of this I&apos;d actually opt into.",
+    body: "Every assistant I have used kept context I never authorized. With Nocturne the policy is a transaction. If it reads something out of scope, the chain rejects the receipt. That is what I have been asking for.",
     name: "Marcus O.",
-    role: "Privacy-first borrower, applied for an MX 90-day line",
+    role: "Privacy-conscious power user",
   },
   {
-    body: "Shielded cohort membership plus private royalties is exactly the kind of mechanic Compact circuits were designed for. This is the showcase app.",
+    body: "Scoped agent authorization, attested TEE execution, on-chain query receipts and instant revocation — this is exactly the shape Compact circuits were designed for. Showcase app material.",
     name: "Ethan T.",
     role: "Midnight ecosystem advocate",
   },
@@ -18,18 +18,17 @@ const quotes = [
 
 export function Testimonials() {
   return (
-    <div className="relative h-full w-full bg-surface-2">
-      <div className="noise" aria-hidden />
+    <div className="relative h-full w-full" style={{ background: "#0d0d0d", color: "#f4f6e6" }}>
       <div className="relative z-10 mx-auto flex h-full max-w-6xl flex-col justify-center px-6 py-16 sm:px-10 sm:py-20">
         <div className="flex items-end justify-between">
           <div>
-            <div className="font-mono text-xs uppercase tracking-widest text-foreground/40">
+            <div className="font-mono text-xs uppercase tracking-widest" style={{ color: "rgba(207, 224, 168, 0.7)" }}>
               Voices
             </div>
-            <h2 className="mt-3 max-w-3xl text-3xl font-semibold tracking-[-0.02em] sm:text-5xl">
+            <h2 className="mt-3 max-w-3xl font-serif text-4xl tracking-tight sm:text-6xl" style={{ color: "#f4f6e6" }}>
               Three people who don&apos;t agree on anything.
               <br />
-              <span className="text-foreground/60">They agree on this.</span>
+              <span style={{ color: "rgba(244, 246, 230, 0.5)" }}>They agree on this.</span>
             </h2>
           </div>
         </div>
@@ -38,22 +37,24 @@ export function Testimonials() {
           {quotes.map((q) => (
             <figure
               key={q.name}
-              className="flex h-full flex-col justify-between gap-8 rounded-2xl border border-border bg-surface p-7"
+              className="flex h-full flex-col justify-between gap-8 rounded-2xl p-7"
+              style={{ background: "#1a1a1a", border: "1px solid rgba(232, 240, 216, 0.12)" }}
             >
               <blockquote
-                className="text-[15px] leading-7 text-foreground/85"
+                className="text-[15px] leading-7"
+                style={{ color: "rgba(244, 246, 230, 0.88)" }}
                 dangerouslySetInnerHTML={{ __html: `&ldquo;${q.body}&rdquo;` }}
               />
               <figcaption>
-                <div className="font-medium">{q.name}</div>
-                <div className="mt-1 text-sm text-foreground/55">{q.role}</div>
+                <div className="font-medium" style={{ color: "#cfe0a8" }}>{q.name}</div>
+                <div className="mt-1 text-sm" style={{ color: "rgba(244, 246, 230, 0.55)" }}>{q.role}</div>
               </figcaption>
             </figure>
           ))}
         </div>
 
-        <p className="mt-10 font-mono text-xs text-foreground/40">
-          Personas are illustrative composites. No real customer quotes — yet.
+        <p className="mt-10 font-mono text-xs" style={{ color: "rgba(244, 246, 230, 0.35)" }}>
+          Personas are illustrative composites. No real customer quotes &mdash; yet.
         </p>
       </div>
     </div>
