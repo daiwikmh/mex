@@ -46,7 +46,6 @@ export function Hero() {
             </div>
           </div>
 
-          <IconCluster />
         </div>
 
         <div className="grid grid-cols-2 gap-x-12 gap-y-3 border-t border-foreground/15 pb-10 pt-6 text-sm text-foreground/70 sm:grid-cols-4">
@@ -71,39 +70,3 @@ function Pillar({ tag, text }: { tag: string; text: string }) {
   );
 }
 
-const ICONS = [
-  { bg: "#0d0d0d", fg: "#e8f0d8", label: "N",  x: 4,  y: 28, size: 76, ring: false },
-  { bg: "#0f5a37", fg: "#e8f0d8", label: "M",  x: 28, y: 4,  size: 72, ring: false },
-  { bg: "#f4f6e6", fg: "#0d0d0d", label: "P",  x: 56, y: 14, size: 68, ring: true  },
-  { bg: "#0f5a37", fg: "#e8f0d8", label: "S",  x: 14, y: 50, size: 60, ring: false },
-  { bg: "#0d0d0d", fg: "#e8f0d8", label: "→",  x: 64, y: 44, size: 62, ring: false },
-  { bg: "#cfe0a8", fg: "#0d0d0d", label: "T",  x: 8,  y: 70, size: 58, ring: false },
-  { bg: "#c97a4a", fg: "#0d0d0d", label: "R",  x: 40, y: 64, size: 64, ring: false },
-  { bg: "#f4f6e6", fg: "#0f5a37", label: "A",  x: 70, y: 76, size: 58, ring: false },
-  { bg: "#0d0d0d", fg: "#e8f0d8", label: "Z",  x: 78, y: 30, size: 50, ring: false },
-];
-
-function IconCluster() {
-  return (
-    <div className="relative hidden h-[480px] w-full lg:block">
-      {ICONS.map((ic, i) => (
-        <div
-          key={i}
-          className="absolute flex items-center justify-center rounded-full font-serif shadow-[0_8px_28px_-8px_rgba(0,0,0,0.35)]"
-          style={{
-            background: ic.bg,
-            color: ic.fg,
-            left: `${ic.x}%`,
-            top: `${ic.y}%`,
-            width: ic.size,
-            height: ic.size,
-            fontSize: ic.size * 0.42,
-            border: ic.ring ? "3px solid #fff" : "none",
-          }}
-        >
-          {ic.label}
-        </div>
-      ))}
-    </div>
-  );
-}

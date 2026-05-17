@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { AppShell } from "@/components/app/AppShell";
 import { useStoredAgent } from "@/lib/agents";
 import { useConnectedSources, type ConnectedSource } from "@/lib/kg/storage";
-import { SEED_GRAPH } from "@/lib/kg/seed";
+import { useLiveGraph } from "@/lib/kg/live";
 
 const SUGGESTIONS = [
   "What invoices are due this month?",
@@ -36,6 +36,7 @@ const SOURCE_LABELS: Record<ConnectedSource, string> = {
 export default function ChatPage() {
   const agent = useStoredAgent();
   const connected = useConnectedSources();
+  const liveGraph = useLiveGraph();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
@@ -48,11 +49,9 @@ export default function ChatPage() {
   }, [messages]);
 
   const nodeCountBySource = (src: ConnectedSource) =>
-    SEED_GRAPH.nodes.filter((n) => n.source === src && !n.private).length;
+    liveGraph.nodes.filter((n) => n.source === src && !n.private).length;
 
-  const totalKgNodes = SEED_GRAPH.nodes.filter(
-    (n) => !n.private && (!n.source || connected.has(n.source)),
-  ).length;
+  const totalKgNodes = liveGraph.nodes.filter((n) => !n.private).length;
 
   const send = async (text: string) => {
     const trimmed = text.trim();
@@ -81,6 +80,8 @@ export default function ChatPage() {
           question: trimmed,
           agentId: agent?.agentId,
           connectedSources: [...connected],
+          liveNodes: liveGraph.nodes.filter((n) => !n.private),
+          liveEdges: liveGraph.edges,
           history,
         }),
       });
@@ -184,7 +185,7 @@ export default function ChatPage() {
               </div>
               <div className="rounded-xl border border-foreground/12 bg-surface px-3 py-2">
                 <div className="font-mono text-[9px] uppercase tracking-widest text-foreground/40">Edges</div>
-                <div className="mt-0.5 font-serif text-xl text-foreground">{SEED_GRAPH.edges.length}</div>
+                <div className="mt-0.5 font-serif text-xl text-foreground">{liveGraph.edges.length}</div>
               </div>
             </div>
           </div>

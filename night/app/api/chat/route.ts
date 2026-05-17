@@ -1,121 +1,82 @@
-import { SEED_GRAPH } from "@/lib/kg/seed";
-import type { KgNode } from "@/lib/kg/types";
+import type { KgNode, KgEdge } from "@/lib/kg/types";
 import { NextRequest, NextResponse } from "next/server";
 
 interface ChatBody {
   question: string;
   agentId?: string;
   connectedSources?: string[];
+  liveNodes?: KgNode[];
+  liveEdges?: KgEdge[];
   history?: { role: "user" | "assistant"; content: string }[];
 }
 
-function scoreNode(node: KgNode, terms: string[]): number {
-  if (node.private) return -1;
-  const text = [
-    node.label,
-    node.type,
-    ...Object.values(node.attrs ?? {}).map(String),
-  ]
+const OG_URL   = process.env.OG_INFERENCE_URL   ?? "https://router-api-testnet.integratenetwork.work/v1";
+const OG_MODEL = process.env.OG_INFERENCE_MODEL ?? "qwen/qwen-2.5-7b-instruct";
+
+function score(node: KgNode, terms: string[]): number {
+  const text = [node.label, node.type, ...Object.values(node.attrs ?? {}).map(String)]
     .join(" ")
     .toLowerCase();
   return terms.reduce((s, t) => s + (text.includes(t) ? 1 : 0), 0);
 }
 
-function findRelevantNodes(question: string, sources: string[]): KgNode[] {
+function findRelevant(nodes: KgNode[], question: string): KgNode[] {
   const terms = question
     .toLowerCase()
     .split(/\W+/)
     .filter((t) => t.length > 2);
-
-  const candidates = SEED_GRAPH.nodes.filter((n) => {
-    if (n.private) return false;
-    if (sources.length > 0 && n.source && !sources.includes(n.source)) return false;
-    return true;
-  });
-
-  return candidates
-    .map((n) => ({ n, score: scoreNode(n, terms) }))
-    .filter(({ score }) => score > 0)
-    .sort((a, b) => b.score - a.score)
-    .slice(0, 8)
-    .map(({ n }) => n);
+  const scored = nodes.map((n) => ({ n, s: score(n, terms) }));
+  const hits = scored.filter(({ s }) => s > 0).sort((a, b) => b.s - a.s);
+  return (hits.length > 0 ? hits : scored).slice(0, 10).map(({ n }) => n);
 }
 
-function buildContext(nodes: KgNode[]): string {
-  if (nodes.length === 0) {
-    const allPublic = SEED_GRAPH.nodes.filter((n) => !n.private).slice(0, 6);
-    return allPublic
-      .map((n) => {
-        const attrs = Object.entries(n.attrs ?? {})
-          .map(([k, v]) => `${k}=${v}`)
-          .join(", ");
-        return `[${n.type}${n.source ? " via " + n.source : ""}] ${n.label}${attrs ? " (" + attrs + ")" : ""}`;
-      })
-      .join("\n");
-  }
-
+function buildContext(nodes: KgNode[], edges: KgEdge[]): string {
   const ids = new Set(nodes.map((n) => n.id));
-  const edges = SEED_GRAPH.edges.filter((e) => ids.has(e.from) && ids.has(e.to));
-
+  const relevant = edges.filter((e) => ids.has(e.from) && ids.has(e.to));
   const nodeLines = nodes.map((n) => {
-    const attrs = Object.entries(n.attrs ?? {})
-      .map(([k, v]) => `${k}=${v}`)
-      .join(", ");
-    return `[${n.type}${n.source ? " via " + n.source : ""}] ${n.label}${attrs ? " (" + attrs + ")" : ""}`;
+    const attrs = Object.entries(n.attrs ?? {}).map(([k, v]) => `${k}=${v}`).join(", ");
+    return `[${n.type}${n.source ? " / " + n.source : ""}] ${n.label}${attrs ? " (" + attrs + ")" : ""}`;
   });
-
-  const edgeLines = edges.slice(0, 10).map((edge) => {
-    const from = SEED_GRAPH.nodes.find((n) => n.id === edge.from)?.label ?? edge.from;
-    const to = SEED_GRAPH.nodes.find((n) => n.id === edge.to)?.label ?? edge.to;
+  const edgeLines = relevant.slice(0, 12).map((edge) => {
+    const from = nodes.find((n) => n.id === edge.from)?.label ?? edge.from;
+    const to   = nodes.find((n) => n.id === edge.to)?.label   ?? edge.to;
     return `${from} --[${edge.type}]--> ${to}`;
   });
-
   return [...nodeLines, ...edgeLines].join("\n");
 }
 
-function templateAnswer(nodes: KgNode[], question: string): string {
-  if (nodes.length === 0) {
-    return "No data matching your question was found in the connected sources. Try connecting more sources on the Sources page.";
+async function callOg(
+  messages: { role: string; content: string }[],
+  apiKey: string,
+): Promise<string> {
+  const res = await fetch(`${OG_URL}/chat/completions`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model: OG_MODEL,
+      messages,
+      temperature: 0.4,
+      max_tokens: 500,
+    }),
+  });
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`0G inference ${res.status}: ${err.slice(0, 200)}`);
   }
-  const first = nodes[0];
-  const names = nodes.map((n) => n.label).join(", ");
-  const attrs = first.attrs
-    ? Object.entries(first.attrs)
-        .map(([k, v]) => `${k}: ${v}`)
-        .join(", ")
-    : null;
-  return (
-    `Found ${nodes.length} relevant item${nodes.length > 1 ? "s" : ""}: ${names}.` +
-    (attrs ? ` Key details for ${first.label} — ${attrs}.` : "") +
-    " Add your ANTHROPIC_API_KEY to enable full AI-powered answers."
-  );
+  const data = (await res.json()) as {
+    choices?: { message?: { content?: string } }[];
+  };
+  return data.choices?.[0]?.message?.content?.trim() ?? "No response.";
 }
 
-export async function POST(req: NextRequest) {
-  const body = (await req.json()) as ChatBody;
-  const { question, connectedSources = [], history = [] } = body;
-
-  const relevantNodes = findRelevantNodes(question, connectedSources);
-  const context = buildContext(relevantNodes);
-
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) {
-    return NextResponse.json({
-      answer: templateAnswer(relevantNodes, question),
-      nodeIds: relevantNodes.map((n) => n.id),
-    });
-  }
-
-  const systemPrompt = `You are an AI assistant for Omnis, a privacy-preserving delegated agent platform on Midnight blockchain. You have access to the user's personal knowledge graph built from their connected data sources (Gmail, Google Calendar, Finance, Google Drive). Answer questions based strictly on the provided context. Be concise and specific. Do not invent data not present in the context. When data is from a specific source, mention it.`;
-
-  const messages = [
-    ...history.map((h) => ({ role: h.role as "user" | "assistant", content: h.content })),
-    {
-      role: "user" as const,
-      content: `Knowledge graph context:\n${context}\n\nQuestion: ${question}`,
-    },
-  ];
-
+async function callAnthropic(
+  messages: { role: "user" | "assistant"; content: string }[],
+  system: string,
+  apiKey: string,
+): Promise<string> {
   const res = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: {
@@ -125,21 +86,93 @@ export async function POST(req: NextRequest) {
     },
     body: JSON.stringify({
       model: "claude-haiku-4-5-20251001",
-      max_tokens: 400,
-      system: systemPrompt,
+      max_tokens: 500,
+      system,
       messages,
     }),
   });
-
   if (!res.ok) {
     const err = await res.text();
+    throw new Error(`Anthropic ${res.status}: ${err.slice(0, 200)}`);
+  }
+  const data = (await res.json()) as { content?: { text?: string }[] };
+  return data.content?.[0]?.text?.trim() ?? "No response.";
+}
+
+export async function POST(req: NextRequest) {
+  const body = (await req.json()) as ChatBody;
+  const {
+    question,
+    liveNodes = [],
+    liveEdges = [],
+    connectedSources = [],
+    history = [],
+  } = body;
+
+  const pool = liveNodes.filter(
+    (n) =>
+      !n.private &&
+      (connectedSources.length === 0 || !n.source || connectedSources.includes(n.source)),
+  );
+
+  const relevant = findRelevant(pool, question);
+  const context =
+    pool.length > 0
+      ? buildContext(relevant, liveEdges)
+      : "No data sources connected.";
+
+  const system =
+    "You are an AI assistant for Omnis, a privacy-preserving delegated agent platform on Midnight blockchain. " +
+    "You have access to the user's personal knowledge graph built from their connected sources (Gmail, Google Calendar). " +
+    "Answer based strictly on the provided context — do not invent data not present. Be concise and specific.";
+
+  const historyMessages = history
+    .slice(-6)
+    .map((h) => ({ role: h.role, content: h.content }));
+
+  const userContent =
+    `Knowledge graph context (${pool.length} nodes):\n${context}\n\nQuestion: ${question}`;
+
+  const ogKey        = process.env.OG_INFERENCE_API;
+  const anthropicKey = process.env.ANTHROPIC_API_KEY;
+
+  if (!ogKey && !anthropicKey) {
+    const answer =
+      relevant.length > 0
+        ? `Found ${relevant.length} item${relevant.length > 1 ? "s" : ""}: ${relevant.map((n) => n.label).join(", ")}.` +
+          (relevant[0]?.attrs
+            ? ` ${relevant[0].label}: ${Object.entries(relevant[0].attrs).map(([k, v]) => `${k}=${v}`).join(", ")}.`
+            : "") +
+          " Set OG_INFERENCE_API for full answers."
+        : pool.length === 0
+        ? "Connect a source on the Sources page first."
+        : "No matching data found.";
+    return NextResponse.json({ answer, nodeIds: relevant.map((n) => n.id) });
+  }
+
+  try {
+    let answer: string;
+
+    if (ogKey) {
+      const messages = [
+        { role: "system", content: system },
+        ...historyMessages,
+        { role: "user", content: userContent },
+      ];
+      answer = await callOg(messages, ogKey);
+    } else {
+      const messages = [
+        ...historyMessages,
+        { role: "user" as const, content: userContent },
+      ];
+      answer = await callAnthropic(messages, system, anthropicKey!);
+    }
+
+    return NextResponse.json({ answer, nodeIds: relevant.map((n) => n.id) });
+  } catch (e) {
     return NextResponse.json(
-      { answer: `API error: ${res.status} ${err}`, nodeIds: [] },
+      { answer: `Inference error: ${(e as Error).message}`, nodeIds: [] },
       { status: 500 },
     );
   }
-
-  const data = (await res.json()) as { content?: { text?: string }[] };
-  const answer = data.content?.[0]?.text ?? "No response from model.";
-  return NextResponse.json({ answer, nodeIds: relevantNodes.map((n) => n.id) });
 }
