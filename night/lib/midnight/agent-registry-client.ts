@@ -30,7 +30,7 @@ export async function deployRegistry(
   const deployed = await deployContract(providers, {
     compiledContract: compiledAgentRegistry,
     privateStateId: AGENT_REGISTRY_PRIVATE_STATE_ID,
-    initialPrivateState: undefined,
+    initialPrivateState: {},
   } as any);
   const address = deployed.deployTxData.public.contractAddress;
   return { address, deployed };
@@ -44,7 +44,7 @@ export async function findRegistry(
     compiledContract: compiledAgentRegistry,
     contractAddress: address,
     privateStateId: AGENT_REGISTRY_PRIVATE_STATE_ID,
-    initialPrivateState: undefined,
+    initialPrivateState: {},
   } as any);
 }
 
