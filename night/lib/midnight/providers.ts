@@ -6,7 +6,6 @@ import { FetchZkConfigProvider } from "@midnight-ntwrk/midnight-js-fetch-zk-conf
 import { setNetworkId } from "@midnight-ntwrk/midnight-js-network-id";
 import { createProofProvider } from "@midnight-ntwrk/midnight-js-types";
 import { toHex, fromHex } from "@midnight-ntwrk/midnight-js-utils";
-import { Transaction, type FinalizedTransaction } from "@midnight-ntwrk/ledger-v8";
 import { createMemoryPrivateStateProvider } from "./memory-private-state-provider";
 import type {
   MidnightProvider,
@@ -96,13 +95,12 @@ export async function buildProviders(
     },
     async balanceTx(tx) {
       const serializedTx = toHex(tx.serialize());
-      const balanced = await api.balanceUnsealedTransaction(serializedTx);
-      return Transaction.deserialize(
-        "signature",
-        "proof",
-        "binding",
-        fromHex(balanced.tx),
-      ) as FinalizedTransaction;
+      const { tx: balancedHex } = await api.balanceUnsealedTransaction(serializedTx);
+      const bytes = fromHex(balancedHex);
+      return {
+        serialize: () => bytes,
+        identifiers: () => [] as string[],
+      } as any;
     },
   };
 
@@ -110,8 +108,8 @@ export async function buildProviders(
     async submitTx(tx) {
       const serialized = toHex(tx.serialize());
       await api.submitTransaction(serialized);
-      const ids = tx.identifiers();
-      return ids[0];
+      const bytes = fromHex(serialized);
+      return toHex(bytes.slice(0, 16)) as any;
     },
   };
 
