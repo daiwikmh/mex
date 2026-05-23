@@ -2,8 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { LenisProvider } from "@/lib/lenis";
-import { WalletProvider } from "@/lib/midnight/wallet";
-import { MidnightRuntimeProvider } from "@/lib/midnight/runtime";
+import { MezoProvider } from "@/lib/mezo/provider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -16,9 +15,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Omnis — Revocable Delegated AI Agents on Midnight",
+  title: "Steward — AI agents that bank your Bitcoin on Mezo",
   description:
-    "A scoped AI agent that runs in a TEE under a policy you signed on Midnight. Every query logged on chain. Revoke any time.",
+    "Borrow MUSD against BTC, fund an AI agent that settles in MEZO, and earn yield by staking the fees it pays. Built on Mezo.",
 };
 
 export default function RootLayout({
@@ -32,11 +31,9 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} antialiased`}
     >
       <body className="min-h-dvh bg-background text-foreground">
-        <WalletProvider>
-          <MidnightRuntimeProvider>
-            <LenisProvider>{children}</LenisProvider>
-          </MidnightRuntimeProvider>
-        </WalletProvider>
+        <MezoProvider>
+          <LenisProvider>{children}</LenisProvider>
+        </MezoProvider>
       </body>
     </html>
   );

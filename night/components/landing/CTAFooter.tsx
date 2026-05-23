@@ -9,24 +9,24 @@ export function CTAFooter() {
         <div className="flex flex-1 flex-col items-center justify-center text-center">
           <div className="inline-flex items-center gap-2 rounded-full px-3 py-1 font-mono text-xs" style={{ background: "rgba(13, 13, 13, 0.06)", border: "1px solid rgba(13, 13, 13, 0.18)", color: "rgba(13, 13, 13, 0.78)" }}>
             <span className="h-1.5 w-1.5 rounded-full" style={{ background: "#0f5a37" }} />
-            Testnet live · Mainnet on schedule
+            Mezo Testnet live · gas paid in BTC
           </div>
           <h2 className="mt-6 max-w-4xl font-serif text-5xl leading-[1.05] tracking-tight sm:text-7xl" style={{ color: "#0d0d0d" }}>
-            Your agent shouldn&apos;t outlive your trust.
+            Keep your Bitcoin. Spend its power.
             <br />
-            <span style={{ color: "rgba(13, 13, 13, 0.5)" }}>Scope it. Watch it. Kill it.</span>
+            <span style={{ color: "rgba(13, 13, 13, 0.5)" }}>Borrow it. Delegate it. Earn on it.</span>
           </h2>
           <p className="mt-6 max-w-xl text-lg leading-7" style={{ color: "rgba(13, 13, 13, 0.72)" }}>
-            Open the console, sign a scope, watch every query land on chain,
-            revoke when you are done. The agent never holds the keys. You do.
+            Borrow MUSD against your BTC, fund a Steward that settles in MEZO, and
+            stake the fees it pays. Connect a wallet to Mezo and start the loop.
           </p>
           <div className="mt-9 flex flex-col gap-3 sm:flex-row">
-            <Button href="/app/agents" size="lg">
-              Launch console
+            <Button href="/docs" size="lg">
+              Open the docs
               <span aria-hidden>→</span>
             </Button>
-            <Button href="#" size="lg" variant="ghost">
-              Read the whitepaper
+            <Button href="/docs#steward" size="lg" variant="ghost">
+              Meet Steward
             </Button>
           </div>
         </div>
@@ -34,7 +34,7 @@ export function CTAFooter() {
         <footer className="mt-12 flex flex-col items-center justify-between gap-6 pt-8 text-sm sm:flex-row" style={{ borderTop: "1px solid rgba(13, 13, 13, 0.18)", color: "rgba(13, 13, 13, 0.65)" }}>
           <div className="flex items-center gap-2">
             <span className="inline-block h-2 w-2 rounded-full" style={{ background: "#0f5a37" }} />
-            <span className="font-mono">Omnis · revocable agents on midnight</span>
+            <span className="font-mono">Steward · AI agents that bank your Bitcoin on Mezo</span>
           </div>
           <div className="flex items-center gap-6">
             <a href="#" className="hover:underline">GitHub</a>

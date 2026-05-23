@@ -1,27 +1,27 @@
 const pillars = [
   {
-    tag: "01 · Scope",
-    title: "A policy you signed, on chain",
-    body: "Before the agent runs, you commit a scope to Midnight: which data sources it can read, which actions it can take, for how long, with what spend ceiling. The agent cannot operate outside that commitment.",
-    detail: "Bytes you control. Not a checkbox in a settings page.",
+    tag: "01 · Borrow",
+    title: "Mint MUSD against your Bitcoin",
+    body: "Deposit BTC, draw MUSD against it. You keep your Bitcoin and unlock dollars to put to work. This is Mezo's core banking primitive — no sale, no taxable event, no handing your coins to a custodian.",
+    detail: "Spending power without selling a sat.",
   },
   {
-    tag: "02 · TEE",
-    title: "The agent runs sealed",
-    body: "Execution happens inside a remote attested enclave. The model never sees more than the policy allows. Inputs, outputs and the model identity are bound to an attestation key that Midnight can verify.",
-    detail: "No company-running-the-agent handshake. Cryptographic.",
+    tag: "02 · Delegate",
+    title: "Fund a scoped agent",
+    body: "Allocate that MUSD to a Steward — an AI agent that acts on your behalf inside a budget and a policy you set. It manages, rebalances and pays, but only within the scope you allow.",
+    detail: "A budget, not your keys.",
   },
   {
-    tag: "03 · Audit",
-    title: "Every query leaves a receipt",
-    body: "For each call the agent makes, a hash of the question, a commitment to the result and the payment are recorded on Midnight. You see what it did. You can prove it to anyone, without leaking the underlying data.",
-    detail: "On-chain provenance. Off-chain privacy.",
+    tag: "03 · Settle",
+    title: "Every action settles in MEZO",
+    body: "The agent pays per action in MEZO with dynamic fees — metered usage, not a flat subscription. Each settlement is an on-chain transaction you can read back. You see exactly what it did and what it cost.",
+    detail: "Metered. On chain. Auditable.",
   },
   {
-    tag: "04 · Revoke",
-    title: "One transaction kills it",
-    body: "Mid-session, you revoke. The next query the agent attempts fails its on-chain authorization check. The chain itself enforces termination — not a polite ask to a backend service that may or may not honor it.",
-    detail: "Enforcement, not best-effort.",
+    tag: "04 · Earn",
+    title: "Stake the fees, earn the yield",
+    body: "The MEZO the agent spends streams into a staking pool. Stake MEZO to earn yield from real agent activity and unlock loyalty fee discounts. Payments fund staking; staking discounts payments.",
+    detail: "The loop closes on itself.",
   },
 ] as const;
 
@@ -32,18 +32,17 @@ export function Features() {
         <div className="mb-10 flex items-end justify-between gap-6">
           <div>
             <div className="font-mono text-xs uppercase tracking-widest" style={{ color: "rgba(230, 238, 91, 0.55)" }}>
-              Four pillars
+              The Steward loop
             </div>
             <h2 className="mt-3 max-w-2xl font-serif text-4xl tracking-tight sm:text-6xl" style={{ color: "#e8f0d8" }}>
-              Scope. Seal. Log. Revoke.
+              Borrow. Delegate. Settle. Earn.
               <br />
-              <span style={{ color: "rgba(230, 238, 91, 0.55)" }}>Pull one out, the trust model collapses.</span>
+              <span style={{ color: "rgba(230, 238, 91, 0.55)" }}>One loop, and it pays for itself.</span>
             </h2>
           </div>
           <p className="hidden max-w-xs text-sm leading-6 sm:block" style={{ color: "rgba(230, 238, 91, 0.65)" }}>
-            Delegated agents only work if every action is bounded, attested,
-            logged and reversible. Without all four, you are just trusting a
-            vendor.
+            Each step funds the next. The MEZO an agent spends becomes the yield
+            a staker earns, which becomes the discount on the next action.
           </p>
         </div>
 

@@ -1,18 +1,18 @@
 const quotes = [
   {
-    body: "I want an agent that handles invoices and travel. I do not want to mint a permanent OAuth token to a startup that will be acquired in eighteen months. A revocable scope I can read on chain is the only version of this I would deploy.",
+    body: "I have held Bitcoin for nine years and never wanted to sell. Borrowing MUSD against it and letting an agent run my treasury inside a budget is the first thing that made my BTC useful without making it gone.",
     name: "Priya N.",
-    role: "Operations lead, mid-stage fintech",
+    role: "Long-term holder",
   },
   {
-    body: "Every assistant I have used kept context I never authorized. With Omnis the policy is a transaction. If it reads something out of scope, the chain rejects the receipt. That is what I have been asking for.",
+    body: "The part that sold me is that the agent settles every action on chain in MEZO. I do not have to trust a dashboard. I can read exactly what it spent and what it did. Metered, not a subscription I forget to cancel.",
     name: "Marcus O.",
-    role: "Privacy-conscious power user",
+    role: "DeFi power user",
   },
   {
-    body: "Scoped agent authorization, attested TEE execution, on-chain query receipts and instant revocation — this is exactly the shape Compact circuits were designed for. Showcase app material.",
+    body: "Gas in BTC, a Bitcoin-backed stablecoin, and agent fees that flow back to stakers — the whole loop runs on Mezo without bolting on a foreign token. Stake MEZO and you are paid by real usage, not emissions.",
     name: "Ethan T.",
-    role: "Midnight ecosystem advocate",
+    role: "Mezo ecosystem builder",
   },
 ] as const;
 

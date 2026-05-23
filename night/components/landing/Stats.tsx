@@ -11,24 +11,24 @@ type Stat = {
 
 const stats: Stat[] = [
   {
-    label: "Consumer AI agents projected by 2027",
-    value: 1.3,
-    prefix: "",
-    suffix: "B",
-    decimals: 1,
-    foot: "Every one of them gets at least one OAuth scope. Almost none of them are revocable on chain.",
+    label: "Bitcoin held as a passive store of value",
+    value: 2,
+    prefix: "$",
+    suffix: "T+",
+    decimals: 0,
+    foot: "Trillions in BTC sit idle. Steward turns it into working capital without a sale.",
   },
   {
-    label: "OAuth token leak incidents in the last 12 months",
-    value: 184,
-    suffix: "+",
-    foot: "Each one is a long-lived scope that nobody can prove was rotated. Midnight authorization receipts make this auditable.",
+    label: "Of every Mezo transaction's gas paid in BTC",
+    value: 100,
+    suffix: "%",
+    foot: "No separate gas token to acquire and hold. On Mezo, Bitcoin is the fuel.",
   },
   {
-    label: "Midnight transactions per agent session",
+    label: "Steps in the loop: borrow, delegate, settle, earn",
     value: 4,
-    suffix: " tx",
-    foot: "Register, set policy, log query, revoke. Mainnet throughput is comfortable.",
+    suffix: " steps",
+    foot: "One closed loop where the fees an agent pays become the yield a staker earns.",
   },
 ];
 
@@ -40,9 +40,9 @@ export function Stats() {
           By the numbers
         </div>
         <h2 className="mt-3 max-w-3xl font-serif text-4xl tracking-tight sm:text-6xl" style={{ color: "#0d0d0d" }}>
-          Agents are shipping anyway.
+          Your Bitcoin is doing nothing.
           <br />
-          <span style={{ color: "rgba(13, 13, 13, 0.5)" }}>Without on-chain scope, you are the audit log.</span>
+          <span style={{ color: "rgba(13, 13, 13, 0.5)" }}>Put it to work without letting it go.</span>
         </h2>
 
         <div className="mt-14 grid grid-cols-1 gap-px overflow-hidden rounded-2xl sm:grid-cols-3" style={{ background: "rgba(13, 13, 13, 0.1)" }}>

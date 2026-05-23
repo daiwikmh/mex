@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/Button";
+import { WalletButton } from "@/components/mezo/WalletButton";
 
 export function Hero() {
   return (
@@ -10,49 +11,46 @@ export function Hero() {
         <header className="flex items-center justify-between pt-6">
           <div className="flex items-center gap-2.5">
             <span className="inline-block h-3 w-3 rounded-sm border-2 border-foreground" />
-            <span className="font-serif text-xl text-foreground">Omnis</span>
+            <span className="font-serif text-xl text-foreground">Steward</span>
           </div>
           <nav className="hidden gap-8 text-sm text-foreground/80 sm:flex">
             <a href="#features" className="hover:text-foreground">How it works</a>
-            <a href="#stats" className="hover:text-foreground">Why Midnight</a>
-            <a href="#testimonials" className="hover:text-foreground">FAQ</a>
+            <a href="/docs" className="hover:text-foreground">Docs</a>
+            <a href="/app" className="hover:text-foreground">Console</a>
           </nav>
-          <Button href="/app/agents" size="sm" variant="secondary">
-            Launch console
-          </Button>
+          <WalletButton />
         </header>
 
         <div className="grid flex-1 grid-cols-1 items-center gap-10 lg:grid-cols-[1.1fr_1fr]">
           <div>
             <h1 className="font-serif text-5xl leading-[1.05] tracking-tight text-foreground sm:text-7xl">
-              Delegate the
+              AI agents that
               <br />
-              agent. Never
+              bank your
               <br />
-              the keys.
+              Bitcoin.
             </h1>
             <p className="mt-7 max-w-md text-base leading-7 text-foreground/75">
-              A revocable, scoped AI agent that acts on your behalf inside a TEE.
-              Every query logged on Midnight. Kill its access in one transaction
-              and the chain enforces it.
+              Borrow MUSD against your BTC, hand it to a scoped agent that
+              settles every action in MEZO, and earn yield by staking the fees
+              it pays. Built on Mezo, where gas is Bitcoin.
             </p>
             <div className="mt-9 flex flex-col gap-3 sm:flex-row">
-              <Button href="/app/agents" size="lg">
-                Open the console
+              <Button href="/app" size="lg">
+                Get started
               </Button>
-              <Button href="/app/demo" size="lg" variant="ghost">
-                Watch the demo &rarr;
+              <Button href="/docs" size="lg" variant="ghost">
+                Read the docs &rarr;
               </Button>
             </div>
           </div>
-
         </div>
 
         <div className="grid grid-cols-2 gap-x-12 gap-y-3 border-t border-foreground/15 pb-10 pt-6 text-sm text-foreground/70 sm:grid-cols-4">
-          <Pillar tag="Scope" text="Policy you sign on chain" />
-          <Pillar tag="TEE"   text="Agent runs sealed" />
-          <Pillar tag="Audit" text="Every query receipt logged" />
-          <Pillar tag="Revoke" text="One tx kills access" />
+          <Pillar tag="Borrow" text="Mint MUSD against BTC" />
+          <Pillar tag="Delegate" text="Fund a scoped agent" />
+          <Pillar tag="Settle" text="Pay per action in MEZO" />
+          <Pillar tag="Earn" text="Stake the fees, earn yield" />
         </div>
       </div>
     </div>
@@ -69,4 +67,3 @@ function Pillar({ tag, text }: { tag: string; text: string }) {
     </div>
   );
 }
-
