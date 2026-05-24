@@ -21,6 +21,8 @@ interface NavItem {
 
 const NAV: NavItem[] = [
   { href: "/app", label: "Overview", letter: "O" },
+  { href: "/app/bridge", label: "Cross-chain", letter: "X" },
+  { href: "/app/vaults", label: "Vaults", letter: "V" },
   { href: "/app/borrow", label: "Borrow", letter: "B" },
   { href: "/app/delegate", label: "Delegate", letter: "D", soon: true },
   { href: "/app/settle", label: "Settle", letter: "S", soon: true },

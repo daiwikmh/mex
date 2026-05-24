@@ -1,6 +1,7 @@
 import { createConfig, http } from "wagmi";
 import { injected } from "wagmi/connectors";
 import { defineChain } from "viem";
+import { base, mainnet } from "viem/chains";
 
 // Mezo chain definitions (BTC is the native gas token, 18 decimals).
 export const mezoTestnet = defineChain({
@@ -39,12 +40,15 @@ export const MEZO_NETWORK: "mainnet" | "testnet" =
 
 export const activeChain = MEZO_NETWORK === "mainnet" ? mezoMainnet : mezoTestnet;
 
+// Ethereum + Base are read-only sources for cross-chain balance reads (no wallet switch needed).
 export const wagmiConfig = createConfig({
-  chains: [mezoTestnet, mezoMainnet],
+  chains: [mezoTestnet, mezoMainnet, mainnet, base],
   connectors: [injected()],
   transports: {
     [mezoTestnet.id]: http(mezoTestnet.rpcUrls.default.http[0]),
     [mezoMainnet.id]: http(mezoMainnet.rpcUrls.default.http[0]),
+    [mainnet.id]: http(process.env.NEXT_PUBLIC_ETH_RPC || undefined),
+    [base.id]: http(process.env.NEXT_PUBLIC_BASE_RPC || undefined),
   },
   ssr: true,
 });

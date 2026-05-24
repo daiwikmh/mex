@@ -1,22 +1,38 @@
 "use client";
 
-import { useState } from "react";
-import { formatUnits, parseEther, parseUnits, zeroAddress, type Address } from "viem";
+import { useEffect, useState } from "react";
+import {
+  formatUnits,
+  hexToString,
+  isAddress,
+  maxUint256,
+  parseEther,
+  parseUnits,
+  stringToHex,
+  zeroAddress,
+  type Address,
+} from "viem";
 import {
   useAccount,
   useBalance,
   useChainId,
   useReadContract,
+  useReadContracts,
   useWaitForTransactionReceipt,
   useWriteContract,
 } from "wagmi";
+import { readContract } from "wagmi/actions";
 import { Button } from "@/components/ui/Button";
 import { WalletButton } from "@/components/mezo/WalletButton";
-import { activeChain } from "@/lib/mezo/config";
+import { activeChain, wagmiConfig } from "@/lib/mezo/config";
 import {
-  BORROWER_OPERATIONS,
   borrowerOperationsAbi,
   erc20Abi,
+  hintHelpersAbi,
+  mezoContractsFor,
+  sortedTrovesAbi,
+  STEWARD_ESCROW,
+  stewardEscrowAbi,
   tokensFor,
 } from "@/lib/mezo/contracts";
 
@@ -146,28 +162,71 @@ function NotWired({ what }: { what: string }) {
   );
 }
 
+// Best-effort efficient insert hints for openTrove; falls back to zeroAddress (works, just gas-heavy).
+async function resolveTroveHints(
+  chainId: number,
+  collateralWei: bigint,
+  debtWei: bigint,
+): Promise<[Address, Address]> {
+  const c = mezoContractsFor(chainId);
+  if (!c || debtWei === BigInt(0)) return [zeroAddress, zeroAddress];
+  try {
+    const nicr = (collateralWei * BigInt(10) ** BigInt(20)) / debtWei;
+    const size = (await readContract(wagmiConfig, {
+      address: c.sortedTroves,
+      abi: sortedTrovesAbi,
+      functionName: "getSize",
+    })) as bigint;
+    const numTrials = BigInt(Math.max(1, Math.ceil(15 * Math.sqrt(Number(size)))));
+    const seed = BigInt(Math.floor(Math.random() * 1e12));
+    const [approxHint] = (await readContract(wagmiConfig, {
+      address: c.hintHelpers,
+      abi: hintHelpersAbi,
+      functionName: "getApproxHint",
+      args: [nicr, numTrials, seed],
+    })) as [Address, bigint, bigint];
+    const [upper, lower] = (await readContract(wagmiConfig, {
+      address: c.sortedTroves,
+      abi: sortedTrovesAbi,
+      functionName: "findInsertPosition",
+      args: [nicr, approxHint, approxHint],
+    })) as [Address, Address];
+    return [upper, lower];
+  } catch {
+    return [zeroAddress, zeroAddress];
+  }
+}
+
 export function BorrowPanel() {
   const { address } = useAccount();
+  const chainId = useChainId();
   const { data: btc } = useBalance({ address });
   const btcAvailable = btc ? btc.formatted : "0";
 
   const [collateral, setCollateral] = useState("");
   const [debt, setDebt] = useState("");
+  const [resolving, setResolving] = useState(false);
   const { writeContract, data: hash, isPending, error } = useWriteContract();
   const { isLoading: confirming, isSuccess } = useWaitForTransactionReceipt({ hash });
 
-  const enabled = Boolean(BORROWER_OPERATIONS);
-  const canSubmit =
-    enabled && Number(collateral) > 0 && Number(debt) > 0 && !isPending && !confirming;
+  const contracts = mezoContractsFor(chainId);
+  const enabled = Boolean(contracts);
+  const busy = resolving || isPending || confirming;
+  const canSubmit = enabled && Number(collateral) > 0 && Number(debt) > 0 && !busy;
 
-  function submit() {
-    if (!BORROWER_OPERATIONS) return;
+  async function submit() {
+    if (!contracts) return;
+    const collateralWei = parseEther(collateral);
+    const debtWei = parseUnits(debt, 18);
+    setResolving(true);
+    const [upper, lower] = await resolveTroveHints(chainId, collateralWei, debtWei);
+    setResolving(false);
     writeContract({
-      address: BORROWER_OPERATIONS,
+      address: contracts.borrowerOperations,
       abi: borrowerOperationsAbi,
       functionName: "openTrove",
-      args: [parseUnits(debt, 18), zeroAddress, zeroAddress],
-      value: parseEther(collateral),
+      args: [debtWei, upper, lower],
+      value: collateralWei,
     });
   }
 
@@ -185,11 +244,17 @@ export function BorrowPanel() {
 
       <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
         <Button onClick={submit} size="lg" disabled={!canSubmit}>
-          {isPending ? "Confirm in wallet…" : confirming ? "Borrowing…" : "Borrow MUSD"}
+          {resolving
+            ? "Finding position…"
+            : isPending
+              ? "Confirm in wallet…"
+              : confirming
+                ? "Borrowing…"
+                : "Borrow MUSD"}
         </Button>
         {!enabled && (
           <span className="text-xs text-foreground/55">
-            Set <code className="font-mono">NEXT_PUBLIC_BORROWER_OPERATIONS</code> to enable borrowing.
+            Borrowing is unavailable on this network.
           </span>
         )}
       </div>
@@ -204,75 +269,376 @@ export function BorrowPanel() {
   );
 }
 
-export function DelegatePanel() {
-  const [name, setName] = useState("");
-  const [budget, setBudget] = useState("");
-  const [perAction, setPerAction] = useState("");
+type AgentTuple = {
+  owner: Address;
+  operator: Address;
+  name: `0x${string}`;
+  budget: bigint;
+  spent: bigint;
+  perActionCap: bigint;
+  expiry: bigint;
+  actions: number;
+  revoked: boolean;
+};
 
+function agentName(name: `0x${string}`) {
+  try {
+    return hexToString(name, { size: 32 }).replace(/ +$/, "") || "steward";
+  } catch {
+    return "steward";
+  }
+}
+
+function StewardNotDeployed({ title, hint, intro }: { title: string; hint: string; intro: string }) {
   return (
-    <Panel title="Delegate to a Steward" hint="fundAgent">
-      <p className="mt-2 max-w-lg text-sm leading-6 text-foreground/70">
-        Fund a scoped agent with MUSD. It acts on your behalf inside a budget and
-        a per-action ceiling you set.
-      </p>
-      <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <Field label="Agent name" hint="label only" value={name} onChange={(v) => setName(v.slice(0, 24))} placeholder="treasury-bot" raw />
-        <Field label="MUSD budget" hint="total cap" value={budget} onChange={setBudget} placeholder="500" />
-        <Field label="Max per action" hint="MEZO ceiling" value={perAction} onChange={setPerAction} placeholder="2" />
-      </div>
-      <div className="mt-6">
-        <Button size="lg" disabled>
-          Deploy Steward
-        </Button>
-      </div>
-      <NotWired what="The agent registry / escrow contract is not deployed yet. This form captures the policy (budget, per-action ceiling) that will be committed on chain once the Steward contract ships on Mezo testnet." />
+    <Panel title={title} hint={hint}>
+      <p className="mt-2 max-w-lg text-sm leading-6 text-foreground/70">{intro}</p>
+      <NotWired what="StewardEscrow is not deployed yet. Deploy the contracts/ project to Mezo testnet (forge script script/Deploy.s.sol --rpc-url mezo_testnet --private-key $PK --broadcast) and set NEXT_PUBLIC_STEWARD_ESCROW to the deployed address to go live." />
     </Panel>
   );
 }
 
-export function SettlePanel() {
+export function DelegatePanel() {
+  const { address } = useAccount();
+  const chainId = useChainId();
+  const musd = tokensFor(chainId).musd;
+
+  const [operator, setOperator] = useState("");
+  const [name, setName] = useState("");
+  const [budget, setBudget] = useState("");
+  const [perAction, setPerAction] = useState("");
+  const [days, setDays] = useState("30");
+
+  const { data: allowance, refetch: refetchAllowance } = useReadContract({
+    address: musd,
+    abi: erc20Abi,
+    functionName: "allowance",
+    args: address && STEWARD_ESCROW ? [address, STEWARD_ESCROW] : undefined,
+    query: { enabled: Boolean(address && musd && STEWARD_ESCROW) },
+  });
+
+  const { writeContract, data: hash, isPending, error } = useWriteContract();
+  const { isLoading: confirming, isSuccess } = useWaitForTransactionReceipt({ hash });
+
+  useEffect(() => {
+    if (isSuccess) refetchAllowance();
+  }, [isSuccess, refetchAllowance]);
+
+  if (!STEWARD_ESCROW) {
+    return (
+      <StewardNotDeployed
+        title="Delegate to a Steward"
+        hint="openAgent"
+        intro="Fund a scoped agent with MUSD. It acts on your behalf inside a budget and a per-action ceiling you set."
+      />
+    );
+  }
+
+  const budgetWei = budget && Number(budget) > 0 ? parseUnits(budget, 18) : BigInt(0);
+  const needsApproval =
+    allowance != null && budgetWei > BigInt(0) && (allowance as bigint) < budgetWei;
+  const formValid =
+    isAddress(operator) &&
+    Number(budget) > 0 &&
+    Number(perAction) > 0 &&
+    Number(perAction) <= Number(budget) &&
+    Number(days) > 0 &&
+    Boolean(musd);
+  const busy = isPending || confirming;
+
+  function approve() {
+    if (!musd) return;
+    writeContract({
+      address: musd,
+      abi: erc20Abi,
+      functionName: "approve",
+      args: [STEWARD_ESCROW as Address, maxUint256],
+    });
+  }
+
+  function delegate() {
+    const expiry = BigInt(Math.floor(Date.now() / 1000) + Number(days) * 86400);
+    writeContract({
+      address: STEWARD_ESCROW as Address,
+      abi: stewardEscrowAbi,
+      functionName: "openAgent",
+      args: [
+        operator as Address,
+        stringToHex((name || "steward").slice(0, 31), { size: 32 }),
+        budgetWei,
+        parseUnits(perAction, 18),
+        expiry,
+      ],
+    });
+  }
+
   return (
-    <Panel title="Settlement activity" hint="MEZO receipts">
+    <Panel title="Delegate to a Steward" hint="openAgent">
       <p className="mt-2 max-w-lg text-sm leading-6 text-foreground/70">
-        Every action a Steward takes settles in MEZO as an on-chain payment. They
-        appear here with amount, action and transaction hash.
+        Fund a scoped agent with MUSD. It acts on your behalf inside a budget,
+        per-action ceiling and expiry committed on chain. Revoke any time.
       </p>
-      <div className="mt-6 overflow-hidden rounded-xl border border-border">
-        <div className="grid grid-cols-[1fr_auto_auto] gap-4 border-b border-border bg-surface-2 px-4 py-2.5 font-mono text-[11px] uppercase tracking-widest text-foreground/45">
-          <span>Action</span>
-          <span>MEZO</span>
-          <span>Tx</span>
-        </div>
-        <div className="px-4 py-10 text-center text-sm text-foreground/50">
-          No settlements yet. Deploy a Steward to start the meter.
-        </div>
+
+      <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <Field label="Operator address" hint="the agent's settling key" value={operator} onChange={setOperator} placeholder="0x…" raw />
+        <Field label="Agent name" hint="label only" value={name} onChange={(v) => setName(v.slice(0, 31))} placeholder="treasury-bot" raw />
+        <Field label="MUSD budget" hint="total escrowed" value={budget} onChange={setBudget} placeholder="500" />
+        <Field label="Max per action" hint="MUSD ceiling" value={perAction} onChange={setPerAction} placeholder="2" />
+        <Field label="Expiry (days)" hint="auto-stops after" value={days} onChange={setDays} placeholder="30" />
       </div>
-      <NotWired what="Settlement reads will subscribe to the agent contract's payment events on Mezo and list each MEZO transfer with its explorer link. Needs the Steward contract address first." />
+
+      <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
+        {needsApproval ? (
+          <Button onClick={approve} size="lg" disabled={!formValid || busy}>
+            {busy ? "Approving…" : "Approve MUSD"}
+          </Button>
+        ) : (
+          <Button onClick={delegate} size="lg" disabled={!formValid || busy}>
+            {isPending ? "Confirm in wallet…" : confirming ? "Delegating…" : "Delegate MUSD"}
+          </Button>
+        )}
+        <span className="text-xs text-foreground/55">
+          {needsApproval ? "One-time approval, then delegate." : "Escrows your MUSD under the policy."}
+        </span>
+      </div>
+
+      {isSuccess && !needsApproval && (
+        <p className="mt-4 font-mono text-xs text-accent">Steward funded. Policy committed on chain.</p>
+      )}
+      {error && (
+        <p className="mt-4 max-w-lg font-mono text-xs text-[#b3492f]">
+          {(error as { shortMessage?: string }).shortMessage ?? error.message}
+        </p>
+      )}
+
+      <AgentsList me={address} mineOnly controls />
+    </Panel>
+  );
+}
+
+function AgentsList({
+  me,
+  mineOnly = false,
+  controls = false,
+}: {
+  me?: Address;
+  mineOnly?: boolean;
+  controls?: boolean;
+}) {
+  const { data: count } = useReadContract({
+    address: STEWARD_ESCROW,
+    abi: stewardEscrowAbi,
+    functionName: "agentCount",
+    query: { enabled: Boolean(STEWARD_ESCROW) },
+  });
+  const n = count ? Number(count as bigint) : 0;
+
+  const { data } = useReadContracts({
+    allowFailure: true,
+    contracts: Array.from({ length: n }, (_, i) => ({
+      address: STEWARD_ESCROW as Address,
+      abi: stewardEscrowAbi,
+      functionName: "getAgent",
+      args: [BigInt(i)],
+    })),
+    query: { enabled: n > 0 && Boolean(STEWARD_ESCROW) },
+  });
+
+  const agents = (data ?? [])
+    .map((r, i) => (r.status === "success" ? { id: i, ...(r.result as unknown as AgentTuple) } : null))
+    .filter((a): a is { id: number } & AgentTuple => a != null)
+    .filter((a) =>
+      !mineOnly
+        ? true
+        : me != null &&
+          (a.owner.toLowerCase() === me.toLowerCase() || a.operator.toLowerCase() === me.toLowerCase()),
+    );
+
+  if (agents.length === 0) {
+    return (
+      <div className="mt-8 rounded-xl border border-dashed border-border bg-background/60 p-5 text-sm text-foreground/55">
+        {mineOnly ? "No agents yet. Delegate MUSD above to open one." : "No agents have been opened yet."}
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-8">
+      <div className="font-mono text-[11px] uppercase tracking-widest text-foreground/45">
+        {mineOnly ? "Your agents" : "All agents"}
+      </div>
+      <div className="mt-3 space-y-3">
+        {agents.map((a) => (
+          <AgentRow key={a.id} agent={a} me={me} controls={controls} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function AgentRow({
+  agent,
+  me,
+  controls,
+}: {
+  agent: { id: number } & AgentTuple;
+  me?: Address;
+  controls: boolean;
+}) {
+  const { writeContract, data: hash, isPending } = useWriteContract();
+  const { isLoading: confirming } = useWaitForTransactionReceipt({ hash });
+  const busy = isPending || confirming;
+
+  const isOwner = me != null && agent.owner.toLowerCase() === me.toLowerCase();
+  const isOperator = me != null && agent.operator.toLowerCase() === me.toLowerCase();
+  const expired = Number(agent.expiry) * 1000 < Date.now();
+  const status = agent.revoked ? "revoked" : expired ? "expired" : "active";
+
+  function revoke() {
+    writeContract({
+      address: STEWARD_ESCROW as Address,
+      abi: stewardEscrowAbi,
+      functionName: "revoke",
+      args: [BigInt(agent.id)],
+    });
+  }
+
+  function settleDemo() {
+    const amount = agent.perActionCap < agent.budget ? agent.perActionCap : agent.budget;
+    if (amount <= BigInt(0)) return;
+    writeContract({
+      address: STEWARD_ESCROW as Address,
+      abi: stewardEscrowAbi,
+      functionName: "settle",
+      args: [BigInt(agent.id), agent.owner, amount, stringToHex(`act-${Date.now()}`.slice(0, 31), { size: 32 })],
+    });
+  }
+
+  return (
+    <div className="rounded-xl border border-border bg-background/60 p-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <span className="font-mono text-sm text-foreground">{agentName(agent.name)}</span>
+          <span
+            className={`rounded-full px-2 py-0.5 text-[10px] uppercase tracking-wider ${
+              status === "active" ? "bg-accent/15 text-accent" : "bg-foreground/8 text-foreground/45"
+            }`}
+          >
+            {status}
+          </span>
+          <span className="font-mono text-[11px] text-foreground/40">#{agent.id}</span>
+        </div>
+        {controls && status === "active" && (
+          <div className="flex gap-2">
+            {isOperator && (
+              <Button onClick={settleDemo} variant="secondary" size="sm" disabled={busy}>
+                {busy ? "…" : "Settle action"}
+              </Button>
+            )}
+            {isOwner && (
+              <Button onClick={revoke} variant="ghost" size="sm" disabled={busy}>
+                {busy ? "…" : "Revoke"}
+              </Button>
+            )}
+          </div>
+        )}
+      </div>
+      <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <Stat label="Budget" value={`${trim(formatUnits(agent.budget, 18))} MUSD`} />
+        <Stat label="Spent" value={`${trim(formatUnits(agent.spent, 18))} MUSD`} />
+        <Stat label="Per action" value={`${trim(formatUnits(agent.perActionCap, 18))} MUSD`} />
+        <Stat label="Actions" value={String(agent.actions)} />
+      </div>
+    </div>
+  );
+}
+
+function Stat({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <div className="font-mono text-[10px] uppercase tracking-widest text-foreground/40">{label}</div>
+      <div className="mt-1 font-mono text-sm text-foreground">{value}</div>
+    </div>
+  );
+}
+
+export function SettlePanel() {
+  const { address } = useAccount();
+
+  if (!STEWARD_ESCROW) {
+    return (
+      <StewardNotDeployed
+        title="Settlement activity"
+        hint="settle"
+        intro="Every action a Steward takes settles on chain as a metered MUSD payment, with a fee routed to the staking pool."
+      />
+    );
+  }
+
+  return (
+    <Panel title="Settlement activity" hint="settle">
+      <p className="mt-2 max-w-lg text-sm leading-6 text-foreground/70">
+        Every metered action draws down an agent&apos;s budget and routes a fee to
+        the pool. Live agent meters below; settle from the Delegate tab as an
+        operator.
+      </p>
+      <AgentsList me={address} />
     </Panel>
   );
 }
 
 export function EarnPanel() {
-  const [amount, setAmount] = useState("");
+  const chainId = useChainId();
+  const musd = tokensFor(chainId).musd;
+
+  const { data: totalFees } = useReadContract({
+    address: STEWARD_ESCROW,
+    abi: stewardEscrowAbi,
+    functionName: "totalFees",
+    query: { enabled: Boolean(STEWARD_ESCROW) },
+  });
+  const { data: feeSink } = useReadContract({
+    address: STEWARD_ESCROW,
+    abi: stewardEscrowAbi,
+    functionName: "feeSink",
+    query: { enabled: Boolean(STEWARD_ESCROW) },
+  });
+  const { data: feeBps } = useReadContract({
+    address: STEWARD_ESCROW,
+    abi: stewardEscrowAbi,
+    functionName: "feeBps",
+    query: { enabled: Boolean(STEWARD_ESCROW) },
+  });
+  const { data: poolBal } = useReadContract({
+    address: musd,
+    abi: erc20Abi,
+    functionName: "balanceOf",
+    args: feeSink ? [feeSink as Address] : undefined,
+    query: { enabled: Boolean(musd && feeSink) },
+  });
+
+  if (!STEWARD_ESCROW) {
+    return (
+      <StewardNotDeployed
+        title="Earn from agent fees"
+        hint="feeSink"
+        intro="A share of every agent settlement accrues to the staking pool. Stakers earn from real usage, not emissions."
+      />
+    );
+  }
+
   return (
-    <Panel title="Stake MEZO" hint="stake">
+    <Panel title="Earn from agent fees" hint="feeSink">
       <p className="mt-2 max-w-lg text-sm leading-6 text-foreground/70">
-        Stake MEZO to earn yield from the fees agents pay, and unlock loyalty fee
-        discounts. Rewards come from real usage, not emissions.
+        A share of every agent settlement accrues to the staking pool. This is
+        yield from real agent usage, not emissions.
       </p>
-      <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <Field label="MEZO to stake" hint="from your balance" value={amount} onChange={setAmount} placeholder="100" />
-        <div className="rounded-xl border border-border bg-background/60 p-4">
-          <div className="font-mono text-[11px] uppercase tracking-widest text-foreground/45">Est. APR</div>
-          <div className="mt-1 font-serif text-2xl text-foreground/50">—</div>
-        </div>
+      <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <BalanceCard label="Pool balance" sub="MUSD held by feeSink" value={poolBal != null ? trim(formatUnits(poolBal as bigint, 18)) : "—"} />
+        <BalanceCard label="Lifetime fees" sub="routed to stakers" value={totalFees != null ? trim(formatUnits(totalFees as bigint, 18)) : "—"} />
+        <BalanceCard label="Fee rate" sub="per settlement" value={feeBps != null ? `${Number(feeBps) / 100}%` : "—"} />
       </div>
-      <div className="mt-6">
-        <Button size="lg" disabled>
-          Stake MEZO
-        </Button>
-      </div>
-      <NotWired what="The staking pool that recycles agent fees into staker yield is not deployed yet. APR will be derived from realized fee flow once the pool ships." />
+      <NotWired what="Staking deposits (locking MEZO to claim a share of these fees) ship next. Today this shows the live fee pool fed by real settlements." />
     </Panel>
   );
 }
