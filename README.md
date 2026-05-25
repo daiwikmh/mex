@@ -1,4 +1,4 @@
-# Steward
+# Mex
 
 Bank your Bitcoin on Mezo. Borrow MUSD against BTC, hand a scoped, revocable, metered
 MUSD budget to a delegated operator, settle each action on chain, and route a fee to a
