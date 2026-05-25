@@ -15,7 +15,7 @@ const getStarted: Doc[] = [
   {
     badge: "01",
     title: "Open the console",
-    body: "Launch the Steward console and connect a wallet to Mezo.",
+    body: "Launch the Mex console and connect a wallet to Mezo.",
     href: "/app",
   },
   {
@@ -27,12 +27,12 @@ const getStarted: Doc[] = [
   {
     badge: "03",
     title: "Borrow MUSD",
-    body: "Deposit BTC and mint MUSD against it to fund a Steward.",
+    body: "Deposit BTC and mint MUSD against it to fund a Mex.",
     href: "/app/borrow",
   },
   {
     badge: "04",
-    title: "Delegate a Steward",
+    title: "Delegate a Mex",
     body: "Fund a scoped agent with a budget and a per-action ceiling.",
     href: "/app/delegate",
   },
@@ -89,7 +89,7 @@ const integrations: Doc[] = [
   },
   {
     badge: "★",
-    title: "Steward agents",
+    title: "Mex agents",
     body: "Delegate an AI agent that banks your Bitcoin, settles in MEZO, and reports every action.",
     href: "#steward",
   },
@@ -124,7 +124,7 @@ const flywheel = [
   },
   {
     step: "02",
-    title: "Fund a Steward",
+    title: "Fund a Mex",
     body: "Allocate MUSD to a scoped AI agent that acts on your behalf inside its budget.",
   },
   {
@@ -154,7 +154,7 @@ export default function DocsPage() {
           <nav className="hidden gap-8 text-sm text-foreground/80 sm:flex">
             <a href="#get-started" className="hover:text-foreground">Get started</a>
             <a href="#learn" className="hover:text-foreground">Learn</a>
-            <a href="#steward" className="hover:text-foreground">Steward</a>
+            <a href="#steward" className="hover:text-foreground">Mex</a>
             <Link href="/app" className="hover:text-foreground">Console</Link>
           </nav>
           <WalletButton />
@@ -179,7 +179,7 @@ export default function DocsPage() {
               Get started
             </Button>
             <Button href="#steward" size="lg" variant="ghost">
-              Meet Steward &rarr;
+              Meet Mex &rarr;
             </Button>
           </div>
         </section>
@@ -236,7 +236,7 @@ function Featured() {
           Featured · Staking + agent payments
         </div>
         <h2 className="mt-4 max-w-2xl font-serif text-4xl tracking-tight sm:text-6xl" style={{ color: "#e8f0d8" }}>
-          Steward
+          Mex
           <br />
           <span style={{ color: "rgba(230, 238, 91, 0.55)" }}>AI agents that bank your Bitcoin.</span>
         </h2>

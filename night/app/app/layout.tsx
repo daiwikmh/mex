@@ -3,8 +3,8 @@ import type { ReactNode } from "react";
 import { AppShell } from "@/components/mezo/AppShell";
 
 export const metadata: Metadata = {
-  title: "Steward Console — Mezo",
-  description: "Balances, borrowing and the Steward loop on Mezo.",
+  title: "Mex Console — Mezo",
+  description: "Balances, borrowing and the Mex loop on Mezo.",
 };
 
 export default function AppLayout({ children }: { children: ReactNode }) {

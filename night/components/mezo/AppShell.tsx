@@ -4,7 +4,6 @@ import { useEffect, useState, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import { useAccount, useChainId } from "wagmi";
 import { Sidebar, SidebarProvider, useSidebar } from "@/components/mezo/Sidebar";
-import { VaultNetworkProvider } from "@/components/mezo/network";
 import { ConnectPrompt, WrongChainPrompt } from "@/components/mezo/panels";
 import { activeChain } from "@/lib/mezo/config";
 
@@ -40,12 +39,10 @@ function Content({ children }: { children: ReactNode }) {
 export function AppShell({ children }: { children: ReactNode }) {
   return (
     <div className="relative bg-background text-foreground">
-      <VaultNetworkProvider>
-        <SidebarProvider>
-          <Sidebar />
-          <Content>{children}</Content>
-        </SidebarProvider>
-      </VaultNetworkProvider>
+      <SidebarProvider>
+        <Sidebar />
+        <Content>{children}</Content>
+      </SidebarProvider>
     </div>
   );
 }

@@ -3,7 +3,7 @@ import Link from "next/link";
 import { BalancesGrid } from "@/components/mezo/panels";
 
 export const metadata: Metadata = {
-  title: "Overview — Steward Console",
+  title: "Overview — Mex Console",
 };
 
 export default function OverviewPage() {
@@ -11,7 +11,7 @@ export default function OverviewPage() {
     <div className="space-y-8">
       <PageHeader kicker="Overview" title="Your Bitcoin balance sheet">
         Live balances read from Mezo. Borrow MUSD against your BTC to fund a
-        Steward agent, then settle and stake.
+        Mex agent, then settle and stake.
       </PageHeader>
 
       <BalancesGrid />
@@ -20,7 +20,7 @@ export default function OverviewPage() {
         <h2 className="font-serif text-2xl tracking-tight text-foreground">Next step</h2>
         <p className="mt-2 max-w-lg text-sm leading-6 text-foreground/70">
           Deposit BTC and mint MUSD to get working capital, then delegate it to a
-          Steward.
+          Mex.
         </p>
         <div className="mt-5">
           <Link

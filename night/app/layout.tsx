@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Steward — AI agents that bank your Bitcoin on Mezo",
+  title: "Mex — AI agents that bank your Bitcoin on Mezo",
   description:
     "Borrow MUSD against BTC, fund an AI agent that settles in MEZO, and earn yield by staking the fees it pays. Built on Mezo.",
 };

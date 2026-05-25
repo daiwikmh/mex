@@ -4,7 +4,7 @@ import { BorrowPanel } from "@/components/mezo/panels";
 import { TrovePanel } from "@/components/mezo/TrovePanel";
 
 export const metadata: Metadata = {
-  title: "Borrow — Steward Console",
+  title: "Borrow — Mex Console",
 };
 
 export default function BorrowPage() {

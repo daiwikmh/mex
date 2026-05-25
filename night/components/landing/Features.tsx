@@ -8,7 +8,7 @@ const pillars = [
   {
     tag: "02 · Delegate",
     title: "Fund a scoped agent",
-    body: "Allocate that MUSD to a Steward — an AI agent that acts on your behalf inside a budget and a policy you set. It manages, rebalances and pays, but only within the scope you allow.",
+    body: "Allocate that MUSD to a Mex — an AI agent that acts on your behalf inside a budget and a policy you set. It manages, rebalances and pays, but only within the scope you allow.",
     detail: "A budget, not your keys.",
   },
   {
@@ -32,7 +32,7 @@ export function Features() {
         <div className="mb-10 flex items-end justify-between gap-6">
           <div>
             <div className="font-mono text-xs uppercase tracking-widest" style={{ color: "rgba(230, 238, 91, 0.55)" }}>
-              The Steward loop
+              The Mex loop
             </div>
             <h2 className="mt-3 max-w-2xl font-serif text-4xl tracking-tight sm:text-6xl" style={{ color: "#e8f0d8" }}>
               Borrow. Delegate. Settle. Earn.

@@ -6,15 +6,12 @@ import {
   useAccount,
   useChainId,
   useReadContract,
-  useReadContracts,
   useSwitchChain,
   useWaitForTransactionReceipt,
   useWriteContract,
 } from "wagmi";
 import { Button } from "@/components/ui/Button";
-import { useVaultNetwork } from "@/components/mezo/network";
 import { erc20Abi } from "@/lib/mezo/contracts";
-import { VAULTS, type VaultApy } from "@/lib/mezo/vaults";
 import { TESTNET_VAULT_CHAIN } from "@/lib/mezo/config";
 import {
   AAVE_BASE_SEPOLIA,
@@ -29,133 +26,13 @@ function pctApy(apy: number | null) {
   return apy == null ? "—" : `${apy.toFixed(2)}%`;
 }
 
-function shortUsd(tvl: number | null) {
-  if (tvl == null) return "—";
-  if (tvl >= 1e9) return `$${(tvl / 1e9).toFixed(1)}B`;
-  if (tvl >= 1e6) return `$${(tvl / 1e6).toFixed(1)}M`;
-  if (tvl >= 1e3) return `$${(tvl / 1e3).toFixed(0)}K`;
-  return `$${tvl.toFixed(0)}`;
-}
-
 function fmtAmount(raw: bigint, decimals: number) {
   const n = Number(formatUnits(raw, decimals));
   return n.toLocaleString(undefined, { maximumFractionDigits: 6 });
 }
 
+// Real Aave v3 on Base Sepolia — live APR + deposit/withdraw.
 export function VaultsPanel() {
-  const { network } = useVaultNetwork();
-  return network === "testnet" ? <TestnetVaults /> : <MainnetVaults />;
-}
-
-// ---------------------------------------------------------------------------
-// Mainnet: read-only Aave positions + live APY from DeFiLlama.
-// ---------------------------------------------------------------------------
-
-const CHAINS = Array.from(new Set(VAULTS.map((v) => v.chainName)));
-
-function MainnetVaults() {
-  const { address } = useAccount();
-  const [apys, setApys] = useState<Record<string, VaultApy>>({});
-  const [loadingApy, setLoadingApy] = useState(true);
-
-  useEffect(() => {
-    let active = true;
-    fetch("/api/vaults")
-      .then((r) => r.json())
-      .then((j: { vaults?: VaultApy[] }) => {
-        if (!active) return;
-        const m: Record<string, VaultApy> = {};
-        (j.vaults ?? []).forEach((v) => (m[v.id] = v));
-        setApys(m);
-      })
-      .catch(() => {})
-      .finally(() => active && setLoadingApy(false));
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  const { data: balances } = useReadContracts({
-    allowFailure: true,
-    contracts: VAULTS.map((v) => ({
-      address: v.aToken,
-      abi: erc20Abi,
-      functionName: "balanceOf",
-      args: address ? [address] : undefined,
-      chainId: v.chainId,
-    })),
-    query: { enabled: Boolean(address) },
-  });
-
-  const rows = VAULTS.map((v, i) => {
-    const res = balances?.[i];
-    const raw = res?.status === "success" ? (res.result as unknown as bigint) : BigInt(0);
-    return {
-      v,
-      apy: apys[v.id]?.apy ?? null,
-      tvl: apys[v.id]?.tvlUsd ?? null,
-      pos: raw > BigInt(0) ? fmtAmount(raw, v.decimals) : null,
-    };
-  });
-
-  return (
-    <div className="rounded-2xl border border-border bg-surface/80 p-6 backdrop-blur-sm sm:p-8">
-      <div className="flex items-baseline justify-between gap-4">
-        <h2 className="font-serif text-2xl tracking-tight text-foreground">Yield vaults on other chains</h2>
-        <span className="font-mono text-xs text-foreground/45">mainnet · read-only</span>
-      </div>
-      <p className="mt-2 max-w-xl text-sm leading-6 text-foreground/70">
-        Venues a Steward could deploy idle capital into, across chains. APYs are
-        live from DeFiLlama; positions read from your wallet. Switch to Testnet in
-        the sidebar to actually deposit and withdraw.
-      </p>
-
-      {CHAINS.map((chain) => {
-        const group = rows.filter((r) => r.v.chainName === chain);
-        return (
-          <div key={chain} className="mt-6">
-            <span className="font-mono text-[11px] uppercase tracking-widest text-accent">{chain}</span>
-            <div className="mt-3 overflow-hidden rounded-xl border border-border">
-              <div className="grid grid-cols-[1.4fr_auto_auto_auto] gap-4 border-b border-border bg-surface-2 px-4 py-2.5 font-mono text-[10px] uppercase tracking-widest text-foreground/45">
-                <span>Vault</span>
-                <span className="text-right">APY</span>
-                <span className="text-right">TVL</span>
-                <span className="text-right">Your position</span>
-              </div>
-              {group.map((r, idx) => (
-                <div
-                  key={r.v.id}
-                  className={`grid grid-cols-[1.4fr_auto_auto_auto] items-center gap-4 px-4 py-3 ${
-                    idx > 0 ? "border-t border-border" : ""
-                  }`}
-                >
-                  <div className="flex items-center gap-2.5">
-                    <span className="font-mono text-sm text-foreground">{r.v.project}</span>
-                    <span className="font-mono text-sm text-foreground/70">{r.v.asset}</span>
-                    <span className="rounded-full bg-foreground/8 px-2 py-0.5 text-[10px] uppercase tracking-wider text-foreground/45">
-                      {r.v.kind === "btc" ? "Bitcoin" : "Stable"}
-                    </span>
-                  </div>
-                  <span className="text-right font-mono text-sm text-accent">{pctApy(r.apy)}</span>
-                  <span className="text-right font-mono text-sm text-foreground/60">{shortUsd(r.tvl)}</span>
-                  <span className="text-right font-mono text-sm text-foreground">{r.pos ?? "—"}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        );
-      })}
-
-      {loadingApy && <div className="mt-4 text-xs text-foreground/45">Loading live APYs…</div>}
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Testnet: real Aave v3 on Base Sepolia — live APR + deposit/withdraw.
-// ---------------------------------------------------------------------------
-
-function TestnetVaults() {
   const { address } = useAccount();
   const chainId = useChainId();
   const { switchChain, isPending: switching } = useSwitchChain();
@@ -164,12 +41,12 @@ function TestnetVaults() {
   return (
     <div className="rounded-2xl border border-border bg-surface/80 p-6 backdrop-blur-sm sm:p-8">
       <div className="flex items-baseline justify-between gap-4">
-        <h2 className="font-serif text-2xl tracking-tight text-foreground">Testnet vaults · Base Sepolia</h2>
+        <h2 className="font-serif text-2xl tracking-tight text-foreground">Yield vaults · Base Sepolia</h2>
         <span className="font-mono text-xs text-foreground/45">live · real deposits</span>
       </div>
       <p className="mt-2 max-w-xl text-sm leading-6 text-foreground/70">
-        Real Aave v3 markets on Base Sepolia. Deposit and withdraw actually run on
-        chain. Get test tokens from the{" "}
+        Real Aave v3 markets on Base Sepolia. Deposit and withdraw run on chain. Get
+        test tokens from the{" "}
         <a
           href={AAVE_BASE_SEPOLIA.faucetUrl}
           target="_blank"
@@ -220,7 +97,7 @@ function TestnetVaultRow({
     args: [vault.underlying],
     chainId: cid,
   });
-  const { data: position } = useReadContract({
+  const { data: position, refetch: rPos } = useReadContract({
     address: vault.aToken,
     abi: erc20Abi,
     functionName: "balanceOf",
@@ -228,7 +105,7 @@ function TestnetVaultRow({
     chainId: cid,
     query: { enabled: Boolean(owner) },
   });
-  const { data: walletBal } = useReadContract({
+  const { data: walletBal, refetch: rBal } = useReadContract({
     address: vault.underlying,
     abi: erc20Abi,
     functionName: "balanceOf",
@@ -236,7 +113,7 @@ function TestnetVaultRow({
     chainId: cid,
     query: { enabled: Boolean(owner) },
   });
-  const { data: allowance, refetch: refetchAllowance } = useReadContract({
+  const { data: allowance, refetch: rAllow } = useReadContract({
     address: vault.underlying,
     abi: erc20Abi,
     functionName: "allowance",
@@ -248,8 +125,12 @@ function TestnetVaultRow({
   const { writeContract, data: hash, isPending, error } = useWriteContract();
   const { isLoading: confirming, isSuccess } = useWaitForTransactionReceipt({ hash });
   useEffect(() => {
-    if (isSuccess) refetchAllowance();
-  }, [isSuccess, refetchAllowance]);
+    if (isSuccess) {
+      rPos();
+      rBal();
+      rAllow();
+    }
+  }, [isSuccess, rPos, rBal, rAllow]);
 
   const apr = reserve ? rayToApr((reserve as unknown as bigint[])[5]) : null;
   const posStr = position != null ? fmtAmount(position as unknown as bigint, vault.decimals) : "—";

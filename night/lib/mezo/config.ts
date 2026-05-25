@@ -1,7 +1,7 @@
 import { createConfig, http } from "wagmi";
 import { injected } from "wagmi/connectors";
 import { defineChain } from "viem";
-import { base, baseSepolia, mainnet } from "viem/chains";
+import { baseSepolia } from "viem/chains";
 
 // Mezo chain definitions (BTC is the native gas token, 18 decimals).
 export const mezoTestnet = defineChain({
@@ -35,21 +35,14 @@ export const mezoMainnet = defineChain({
   },
 });
 
-export const MEZO_NETWORK: "mainnet" | "testnet" =
-  process.env.NEXT_PUBLIC_MEZO_NETWORK === "mainnet" ? "mainnet" : "testnet";
+// Testnet-only for now. Mezo testnet is the home chain; Base Sepolia is the vault target.
+export const activeChain = mezoTestnet;
 
-export const activeChain = MEZO_NETWORK === "mainnet" ? mezoMainnet : mezoTestnet;
-
-// Ethereum + Base are read-only sources for cross-chain balance reads; Base Sepolia is the
-// testnet vault target (real Aave deposit/withdraw) so it needs write access too.
 export const wagmiConfig = createConfig({
-  chains: [mezoTestnet, mezoMainnet, mainnet, base, baseSepolia],
+  chains: [mezoTestnet, baseSepolia],
   connectors: [injected()],
   transports: {
     [mezoTestnet.id]: http(mezoTestnet.rpcUrls.default.http[0]),
-    [mezoMainnet.id]: http(mezoMainnet.rpcUrls.default.http[0]),
-    [mainnet.id]: http(process.env.NEXT_PUBLIC_ETH_RPC || undefined),
-    [base.id]: http(process.env.NEXT_PUBLIC_BASE_RPC || undefined),
     [baseSepolia.id]: http(process.env.NEXT_PUBLIC_BASE_SEPOLIA_RPC || undefined),
   },
   ssr: true,

@@ -16,7 +16,7 @@ const stats: Stat[] = [
     prefix: "$",
     suffix: "T+",
     decimals: 0,
-    foot: "Trillions in BTC sit idle. Steward turns it into working capital without a sale.",
+    foot: "Trillions in BTC sit idle. Mex turns it into working capital without a sale.",
   },
   {
     label: "Of every Mezo transaction's gas paid in BTC",

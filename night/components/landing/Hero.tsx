@@ -11,7 +11,7 @@ export function Hero() {
         <header className="flex items-center justify-between pt-6">
           <div className="flex items-center gap-2.5">
             <span className="inline-block h-3 w-3 rounded-sm border-2 border-foreground" />
-            <span className="font-serif text-xl text-foreground">Steward</span>
+            <span className="font-serif text-xl text-foreground">Mex</span>
           </div>
           <nav className="hidden gap-8 text-sm text-foreground/80 sm:flex">
             <a href="#features" className="hover:text-foreground">How it works</a>

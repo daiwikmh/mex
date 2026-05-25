@@ -3,7 +3,7 @@ import { PageHeader } from "@/app/app/page";
 import { EarnPanel } from "@/components/mezo/panels";
 
 export const metadata: Metadata = {
-  title: "Earn — Steward Console",
+  title: "Earn — Mex Console",
 };
 
 export default function EarnPage() {
