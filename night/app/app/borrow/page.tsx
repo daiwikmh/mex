@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { PageHeader } from "@/app/app/page";
 import { BorrowPanel } from "@/components/mezo/panels";
+import { TrovePanel } from "@/components/mezo/TrovePanel";
 
 export const metadata: Metadata = {
   title: "Borrow — Steward Console",
@@ -14,6 +15,7 @@ export default function BorrowPage() {
         spending power.
       </PageHeader>
       <BorrowPanel />
+      <TrovePanel />
     </div>
   );
 }

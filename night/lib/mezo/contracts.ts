@@ -104,7 +104,8 @@ export function mezoContractsFor(chainId: number): MezoContracts | undefined {
   return borrowerOverride ? { ...base, borrowerOperations: borrowerOverride } : base;
 }
 
-// MUSD BorrowerOperations.openTrove(debtAmount, upperHint, lowerHint) payable; collateral is msg.value (BTC).
+// MUSD BorrowerOperations (signatures verified from mezo-org/musd IBorrowerOperations).
+// Collateral (BTC) is msg.value on openTrove/addColl. Hints can be zeroAddress (gas-heavy but valid).
 export const borrowerOperationsAbi = [
   {
     type: "function",
@@ -117,7 +118,96 @@ export const borrowerOperationsAbi = [
     ],
     outputs: [],
   },
+  {
+    type: "function",
+    name: "addColl",
+    stateMutability: "payable",
+    inputs: [
+      { name: "_upperHint", type: "address" },
+      { name: "_lowerHint", type: "address" },
+    ],
+    outputs: [],
+  },
+  {
+    type: "function",
+    name: "withdrawColl",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "_amount", type: "uint256" },
+      { name: "_upperHint", type: "address" },
+      { name: "_lowerHint", type: "address" },
+    ],
+    outputs: [],
+  },
+  {
+    type: "function",
+    name: "withdrawMUSD",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "_amount", type: "uint256" },
+      { name: "_upperHint", type: "address" },
+      { name: "_lowerHint", type: "address" },
+    ],
+    outputs: [],
+  },
+  {
+    type: "function",
+    name: "repayMUSD",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "_amount", type: "uint256" },
+      { name: "_upperHint", type: "address" },
+      { name: "_lowerHint", type: "address" },
+    ],
+    outputs: [],
+  },
+  {
+    type: "function",
+    name: "closeTrove",
+    stateMutability: "nonpayable",
+    inputs: [],
+    outputs: [],
+  },
 ] as const;
+
+// TroveManager: read a borrower's position. MUSD gas compensation is 200 MUSD (held in the gas pool).
+export const troveManagerAbi = [
+  {
+    type: "function",
+    name: "getTroveDebt",
+    stateMutability: "view",
+    inputs: [{ name: "_borrower", type: "address" }],
+    outputs: [{ name: "", type: "uint256" }],
+  },
+  {
+    type: "function",
+    name: "getTroveColl",
+    stateMutability: "view",
+    inputs: [{ name: "_borrower", type: "address" }],
+    outputs: [{ name: "", type: "uint256" }],
+  },
+  {
+    type: "function",
+    name: "MCR",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ name: "", type: "uint256" }],
+  },
+] as const;
+
+// PriceFeed.fetchPrice returns BTC/USD (1e18). On-chain it is nonpayable but eth_call returns the value.
+export const priceFeedAbi = [
+  {
+    type: "function",
+    name: "fetchPrice",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ name: "", type: "uint256" }],
+  },
+] as const;
+
+// MUSD gas compensation (held in gas pool, refunded on close); repayment on close = debt - this.
+export const MUSD_GAS_COMPENSATION = BigInt("200000000000000000000");
 
 // HintHelpers + SortedTroves: compute an efficient insert position so openTrove does not walk the whole list.
 export const hintHelpersAbi = [
@@ -167,6 +257,33 @@ const rawEscrow = process.env.NEXT_PUBLIC_STEWARD_ESCROW ?? "";
 export const STEWARD_ESCROW = (
   /^0x[a-fA-F0-9]{40}$/.test(rawEscrow) ? rawEscrow : undefined
 ) as Address | undefined;
+
+// StewardBridge Outbox (our trusted demo bridge, source side on Mezo). Deployed 2026-05-24.
+const rawOutbox = process.env.NEXT_PUBLIC_BRIDGE_OUTBOX ?? "0xa2b457DAb5b0710A5B8063f813e5fbE3A19deb33";
+export const BRIDGE_OUTBOX = (
+  /^0x[a-fA-F0-9]{40}$/.test(rawOutbox) ? rawOutbox : undefined
+) as Address | undefined;
+
+export const bridgeOutboxAbi = [
+  {
+    type: "function",
+    name: "lock",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "amount", type: "uint256" },
+      { name: "destChainId", type: "uint64" },
+      { name: "recipient", type: "address" },
+    ],
+    outputs: [{ name: "id", type: "uint256" }],
+  },
+  {
+    type: "function",
+    name: "nextNonce",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ name: "", type: "uint256" }],
+  },
+] as const;
 
 export const stewardEscrowAbi = [
   {

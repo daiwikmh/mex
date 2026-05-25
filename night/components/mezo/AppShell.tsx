@@ -1,20 +1,27 @@
 "use client";
 
 import { useEffect, useState, type ReactNode } from "react";
+import { usePathname } from "next/navigation";
 import { useAccount, useChainId } from "wagmi";
 import { Sidebar, SidebarProvider, useSidebar } from "@/components/mezo/Sidebar";
+import { VaultNetworkProvider } from "@/components/mezo/network";
 import { ConnectPrompt, WrongChainPrompt } from "@/components/mezo/panels";
 import { activeChain } from "@/lib/mezo/config";
+
+// Cross-chain pages are inherently multi-chain; they only need a connected wallet, not Mezo.
+const CROSS_CHAIN_ROUTES = ["/app/bridge", "/app/vaults"];
 
 function Gate({ children }: { children: ReactNode }) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
   const { isConnected } = useAccount();
   const chainId = useChainId();
+  const pathname = usePathname();
+  const crossChain = CROSS_CHAIN_ROUTES.some((r) => pathname.startsWith(r));
 
   if (!mounted) return null;
   if (!isConnected) return <ConnectPrompt />;
-  if (chainId !== activeChain.id) return <WrongChainPrompt />;
+  if (!crossChain && chainId !== activeChain.id) return <WrongChainPrompt />;
   return <>{children}</>;
 }
 
@@ -33,10 +40,12 @@ function Content({ children }: { children: ReactNode }) {
 export function AppShell({ children }: { children: ReactNode }) {
   return (
     <div className="relative bg-background text-foreground">
-      <SidebarProvider>
-        <Sidebar />
-        <Content>{children}</Content>
-      </SidebarProvider>
+      <VaultNetworkProvider>
+        <SidebarProvider>
+          <Sidebar />
+          <Content>{children}</Content>
+        </SidebarProvider>
+      </VaultNetworkProvider>
     </div>
   );
 }

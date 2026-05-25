@@ -11,6 +11,7 @@ import {
   type ReactNode,
 } from "react";
 import { WalletButton } from "@/components/mezo/WalletButton";
+import { useVaultNetwork } from "@/components/mezo/network";
 
 interface NavItem {
   href: string;
@@ -83,6 +84,44 @@ function activeHref(pathname: string): string | null {
   return match;
 }
 
+function NetworkToggle({ collapsed }: { collapsed: boolean }) {
+  const { network, setNetwork, toggle } = useVaultNetwork();
+  const testnet = network === "testnet";
+
+  if (collapsed) {
+    return (
+      <div className="flex justify-center border-b border-foreground/15 py-2">
+        <button
+          onClick={toggle}
+          title={`Vaults: ${network} (click to switch)`}
+          className="h-6 w-6 rounded font-mono text-[10px] font-bold text-foreground/70 hover:bg-surface/60"
+        >
+          {testnet ? "T" : "M"}
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="border-b border-foreground/15 px-4 py-3">
+      <div className="font-mono text-[10px] uppercase tracking-widest text-foreground/40">Vault network</div>
+      <div className="mt-2 grid grid-cols-2 gap-1 rounded-lg border border-border bg-background p-0.5">
+        {(["mainnet", "testnet"] as const).map((n) => (
+          <button
+            key={n}
+            onClick={() => setNetwork(n)}
+            className={`rounded-md py-1 font-mono text-[11px] uppercase tracking-wider transition-colors ${
+              network === n ? "bg-foreground text-background" : "text-foreground/55 hover:text-foreground"
+            }`}
+          >
+            {n === "mainnet" ? "Mainnet" : "Testnet"}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function Sidebar() {
   const pathname = usePathname();
   const { collapsed, toggle, mobileOpen, setMobileOpen } = useSidebar();
@@ -137,6 +176,7 @@ export function Sidebar() {
       </nav>
 
       <div className="border-t border-foreground/15">
+        <NetworkToggle collapsed={collapsed} />
         {!collapsed ? (
           <div className="px-4 py-3">
             <WalletButton />

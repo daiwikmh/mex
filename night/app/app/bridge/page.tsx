@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { PageHeader } from "@/app/app/page";
-import { CrossChainPanel } from "@/components/mezo/CrossChainPanel";
+import { CrossChainView } from "@/components/mezo/CrossChainView";
 
 export const metadata: Metadata = {
   title: "Cross-chain — Steward Console",
@@ -9,11 +9,11 @@ export const metadata: Metadata = {
 export default function BridgePage() {
   return (
     <div className="space-y-8">
-      <PageHeader kicker="Cross-chain" title="Bring your assets to Mezo">
-        Hold BTC or stablecoins on Ethereum or Base? Steward sees them here. Bridge
-        them to Mezo to borrow MUSD and fund a Steward agent.
+      <PageHeader kicker="Cross-chain" title="Move capital across chains">
+        Mainnet: see your BTC and stables on Ethereum and Base. Testnet: bridge MUSD
+        from Mezo to Base Sepolia for real via StewardBridge.
       </PageHeader>
-      <CrossChainPanel />
+      <CrossChainView />
     </div>
   );
 }
