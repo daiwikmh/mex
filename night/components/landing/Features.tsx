@@ -8,19 +8,19 @@ const pillars = [
   {
     tag: "02 · Delegate",
     title: "Fund a scoped agent",
-    body: "Allocate that MUSD to a Mex — an AI agent that acts on your behalf inside a budget and a policy you set. It manages, rebalances and pays, but only within the scope you allow.",
+    body: "Allocate that MUSD to a Mex agent — a bot, a service, or a teammate that acts inside a budget, a per-action cap and an expiry you set. It spends, but only within the scope you allow, and you can revoke any time.",
     detail: "A budget, not your keys.",
   },
   {
     tag: "03 · Settle",
-    title: "Every action settles in MEZO",
-    body: "The agent pays per action in MEZO with dynamic fees — metered usage, not a flat subscription. Each settlement is an on-chain transaction you can read back. You see exactly what it did and what it cost.",
+    title: "Every action settles on chain",
+    body: "The agent pays per action — metered usage, not a flat subscription. Each settlement is an on-chain transaction with a fee routed to a shared pool. You see exactly what it did and what it cost.",
     detail: "Metered. On chain. Auditable.",
   },
   {
     tag: "04 · Earn",
-    title: "Stake the fees, earn the yield",
-    body: "The MEZO the agent spends streams into a staking pool. Stake MEZO to earn yield from real agent activity and unlock loyalty fee discounts. Payments fund staking; staking discounts payments.",
+    title: "Fees flow back to the pool",
+    body: "Every settlement routes a fee into a shared pool. Stake to earn from real usage and unlock loyalty fee discounts. Payments fund the pool; the pool rewards stakers.",
     detail: "The loop closes on itself.",
   },
 ] as const;
@@ -41,8 +41,8 @@ export function Features() {
             </h2>
           </div>
           <p className="hidden max-w-xs text-sm leading-6 sm:block" style={{ color: "rgba(230, 238, 91, 0.65)" }}>
-            Each step funds the next. The MEZO an agent spends becomes the yield
-            a staker earns, which becomes the discount on the next action.
+            Each step funds the next. The fee an agent pays becomes the yield a
+            staker earns, which becomes the discount on the next action.
           </p>
         </div>
 
@@ -69,6 +69,28 @@ export function Features() {
               </div>
             </article>
           ))}
+        </div>
+
+        <div
+          className="mt-6 flex flex-col gap-3 rounded-2xl px-6 py-5 sm:flex-row sm:items-center sm:justify-between"
+          style={{ background: "rgba(232, 240, 216, 0.08)", border: "1px solid rgba(232, 240, 216, 0.16)" }}
+        >
+          <div>
+            <div className="font-mono text-[11px] uppercase tracking-widest" style={{ color: "#9ec591" }}>
+              Plus · Cross-chain vaults
+            </div>
+            <p className="mt-1 max-w-2xl text-[15px] leading-6" style={{ color: "rgba(244, 246, 230, 0.85)" }}>
+              MUSD doesn&apos;t stay put — bridge it to Base and deposit into real
+              yield vaults like Aave, with your positions tracked across chains.
+            </p>
+          </div>
+          <a
+            href="/app/vaults"
+            className="shrink-0 font-mono text-xs uppercase tracking-widest underline-offset-4 hover:underline"
+            style={{ color: "#cfe0a8" }}
+          >
+            Explore vaults &rarr;
+          </a>
         </div>
       </div>
     </div>

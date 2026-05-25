@@ -24,16 +24,16 @@ export function Hero() {
         <div className="grid flex-1 grid-cols-1 items-center gap-10 lg:grid-cols-[1.1fr_1fr]">
           <div>
             <h1 className="font-serif text-5xl leading-[1.05] tracking-tight text-foreground sm:text-7xl">
-              AI agents that
-              <br />
-              bank your
+              Bank your
               <br />
               Bitcoin.
+              <br />
+              Keep control.
             </h1>
             <p className="mt-7 max-w-md text-base leading-7 text-foreground/75">
-              Borrow MUSD against your BTC, hand it to a scoped agent that
-              settles every action in MEZO, and earn yield by staking the fees
-              it pays. Built on Mezo, where gas is Bitcoin.
+              Borrow MUSD against your BTC, hand a scoped, revocable budget to an
+              agent that settles every action on chain, and route the fees to a
+              shared pool. Built on Mezo, where gas is Bitcoin.
             </p>
             <div className="mt-9 flex flex-col gap-3 sm:flex-row">
               <Button href="/app" size="lg">
@@ -48,9 +48,9 @@ export function Hero() {
 
         <div className="grid grid-cols-2 gap-x-12 gap-y-3 border-t border-foreground/15 pb-10 pt-6 text-sm text-foreground/70 sm:grid-cols-4">
           <Pillar tag="Borrow" text="Mint MUSD against BTC" />
-          <Pillar tag="Delegate" text="Fund a scoped agent" />
-          <Pillar tag="Settle" text="Pay per action in MEZO" />
-          <Pillar tag="Earn" text="Stake the fees, earn yield" />
+          <Pillar tag="Delegate" text="Fund a scoped budget" />
+          <Pillar tag="Settle" text="Pay per action, on chain" />
+          <Pillar tag="Earn" text="Fees flow to the pool" />
         </div>
       </div>
     </div>

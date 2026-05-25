@@ -5,7 +5,7 @@ const quotes = [
     role: "Long-term holder",
   },
   {
-    body: "The part that sold me is that the agent settles every action on chain in MEZO. I do not have to trust a dashboard. I can read exactly what it spent and what it did. Metered, not a subscription I forget to cancel.",
+    body: "The part that sold me is that the agent settles every action on chain. I do not have to trust a dashboard. I can read exactly what it spent and what it did. Metered, not a subscription I forget to cancel.",
     name: "Marcus O.",
     role: "DeFi power user",
   },

@@ -17,15 +17,15 @@ export function CTAFooter() {
             <span style={{ color: "rgba(13, 13, 13, 0.5)" }}>Borrow it. Delegate it. Earn on it.</span>
           </h2>
           <p className="mt-6 max-w-xl text-lg leading-7" style={{ color: "rgba(13, 13, 13, 0.72)" }}>
-            Borrow MUSD against your BTC, fund a Mex that settles in MEZO, and
-            stake the fees it pays. Connect a wallet to Mezo and start the loop.
+            Borrow MUSD against your BTC, fund an agent that settles on chain, and
+            earn from the fees it pays. Connect a wallet to Mezo and start the loop.
           </p>
           <div className="mt-9 flex flex-col gap-3 sm:flex-row">
             <Button href="/docs" size="lg">
               Open the docs
               <span aria-hidden>→</span>
             </Button>
-            <Button href="/docs#steward" size="lg" variant="ghost">
+            <Button href="/docs" size="lg" variant="ghost">
               Meet Mex
             </Button>
           </div>
@@ -34,7 +34,7 @@ export function CTAFooter() {
         <footer className="mt-12 flex flex-col items-center justify-between gap-6 pt-8 text-sm sm:flex-row" style={{ borderTop: "1px solid rgba(13, 13, 13, 0.18)", color: "rgba(13, 13, 13, 0.65)" }}>
           <div className="flex items-center gap-2">
             <span className="inline-block h-2 w-2 rounded-full" style={{ background: "#0f5a37" }} />
-            <span className="font-mono">Mex · AI agents that bank your Bitcoin on Mezo</span>
+            <span className="font-mono">Mex · bank your Bitcoin on Mezo</span>
           </div>
           <div className="flex items-center gap-6">
             <a href="#" className="hover:underline">GitHub</a>
