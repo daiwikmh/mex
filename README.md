@@ -1,72 +1,103 @@
-# Omnis
+# Steward
 
-Revocable delegated AI agents on Midnight. Every query the agent runs is authorized on chain before execution. Revoke at any time — the chain proves it happened.
+Bank your Bitcoin on Mezo. Borrow MUSD against BTC, hand a scoped, revocable, metered
+MUSD budget to a delegated operator, settle each action on chain, and route a fee to a
+pool. Revoke any time and the chain refunds the remainder.
 
----
+The flywheel: **payments fund the pool, the pool rewards stakers.**
 
-## What works
+```
+Borrow MUSD against BTC ──▶ Delegate MUSD (budget + per-action cap + expiry)
+        ▲                                   │
+        │                                   ▼
+   Earn (fee pool) ◀── fee per action ── Settle (metered, on chain)
+```
 
-### Agent registration on Midnight
-Pick a template (Invoice triage, Spend watcher, Calendar defender, Vendor map), set a spend ceiling, expiry, and query limit, then register. Two transactions land on Midnight preview testnet: `register_agent` commits the agent identity and owner binding; `set_policy` commits the scope hash, expiry, and limits. The agent gets a policy hash and a contract address — both verifiable on chain. Contract: `0a12f542b20cb3e445cff3fe9e3242383e42e82c3d26a94a64cd24915a8c26d6`.
+Repo layout:
 
-### Revocation
-One click fires `revoke_agent` on chain. The agent is immediately marked revoked in the UI. Every subsequent query attempt is blocked before it executes. The revocation sits in the Audit feed with a real tx hash — that is the proof, not a promise.
-
-### Data source connectors
-Four connectors: Gmail, Google Calendar, Finance (Stripe), Google Drive. Toggle any on and its data enters the knowledge graph instantly — 8 email nodes, 5 invoices, 4 charges, 4 meetings, 4 documents. Toggle off and those nodes disappear from chat context. Each connector is scoped at connection time: Gmail is read-only, Finance cannot move funds, Calendar cannot write.
-
-### Knowledge graph
-29 nodes across 6 types — Contact, Email, Invoice, Charge, Meeting, Document — linked by 8 edge types: `sent_by`, `sent_to`, `attached_to`, `attended_by`, `charged_for`, `mentions`, `follows_up`, `paid`. Every node is source-tagged (gmail / calendar / finance / drive). Private nodes (personal emails, physio appointments, tax notes) are excluded from all agent traversals regardless of scope.
-
-### Graph traversal with scope enforcement
-The Graph page runs live traversal from a seed node outward. Each hop is checked against the active agent's policy scope — node type, edge type, max depth. Allowed hops light up; out-of-scope hops are shown in red with the block reason. The scope hash is computed live from the current selection and matches what was committed on chain. This is the TEE boundary made visual.
-
-### Chat grounded in the knowledge graph
-The Chat page accepts natural-language questions and answers from the live KG context — only nodes from connected sources, private nodes excluded. With `ANTHROPIC_API_KEY` set, Claude Haiku generates answers grounded strictly in the graph context (no hallucinated data). Without it, structured answers are generated directly from matching nodes and edges. Conversation history is preserved per session.
-
-### Query receipts
-Every allowed query produces a receipt: query hash, result commitment, payment amount, timestamp, and tx hash. Rejected queries are also logged — out-of-scope attempt and reason. These are the on-chain audit entries visible on the Audit page.
-
-### Wallet integration
-Lace wallet connect via the Midnight dApp connector API. The WalletChip in the sidebar shows connection status, shielded address, and live tDUST balance. All transaction signing goes through Lace — no private keys touch the app.
-
----
-
-## Integrations
-
-| Layer | What |
+| Path | What |
 |---|---|
-| Midnight preview testnet | `register_agent`, `set_policy`, `log_query`, `revoke_agent` circuits |
-| Lace wallet | dApp connector v4, proof generation, tx signing, balance |
-| Midnight indexer | Public data provider for contract state reads |
-| Claude Haiku | KG-grounded chat answers (requires `ANTHROPIC_API_KEY`) |
-| Gmail | Email nodes: sender, recipient, subject, date |
-| Google Calendar | Meeting nodes: title, attendees, start time |
-| Finance (Stripe) | Invoice and Charge nodes: amount, status, due date |
-| Google Drive | Document nodes: title, page count, type |
+| `night/` | Next.js 16 + React 19 app (console + landing) |
+| `contracts/` | Foundry project — StewardEscrow + StewardBridge |
 
 ---
 
-## Knowledge graph schema
+## What's live right now (demo)
 
+All of this runs on **Mezo testnet (chain 31611)** and has been exercised on chain unless noted.
+
+| Action | Where | Status |
+|---|---|---|
+| Borrow MUSD against BTC (`openTrove`) | `/app/borrow` | ✅ Live — minted 1,800 MUSD on chain |
+| View + manage trove (collateral, debt, ICR, liquidation price; add/withdraw collateral, repay, borrow more, close) | `/app/borrow` | ✅ Live — reads verified against the open trove |
+| Delegate MUSD to an operator (`openAgent`) | `/app/delegate` | ✅ Live on chain |
+| Settle a metered action (`settle`, fee → pool) | `/app/delegate` · `/app/settle` | ✅ Live on chain |
+| Revoke an agent + refund remainder (`revoke`) | `/app/delegate` | ✅ Live — chain blocks settles after revoke |
+| Earn — read the live fee pool | `/app/earn` | ✅ Live reads (`totalFees`, `feeSink`, fee rate) |
+| Bridge — lock MUSD on Mezo (`StewardBridge`) | `/app/bridge` (testnet) | ✅ Source side live — 10 MUSD locked on chain |
+| Cross-chain balances (Ethereum + Base) | `/app/bridge` (mainnet) | ✅ Live reads (needs a wallet holding those assets) |
+| Yield vaults — Aave APYs + your positions | `/app/vaults` (mainnet) | ✅ Live (DeFiLlama APYs + on-chain positions) |
+| Testnet vault deposit/withdraw (Aave Base Sepolia) | `/app/vaults` (testnet) | ⏳ UI live, reads verified — needs Base Sepolia gas + faucet tokens to transact |
+| Bridge completion (mint bMUSD on Base) | relayer + Inbox | ⏳ Built, not deployed — needs Base Sepolia gas |
+| Staking deposits (lock MEZO for fee share) | `/app/earn` | ❌ Not built (Earn shows the pool only) |
+
+**Recommended live demo (all real, all on Mezo testnet):**
+Borrow MUSD → Delegate to an agent → Settle two actions (watch the budget draw down and the fee land in Earn) → Revoke (remainder refunds, further settles revert) → show the locked bridge transfer. This is the whole flywheel with real transactions. Keep a recorded run as a fallback.
+
+---
+
+## App surfaces
+
+A sidebar **Mainnet/Testnet** toggle switches the cross-chain pages between read-only mainnet data and live testnet actions.
+
+- **Overview** `/app` — live BTC / MUSD / MEZO balances.
+- **Cross-chain** `/app/bridge` — mainnet: your BTC-like assets on Ethereum/Base; testnet: bridge MUSD to Base Sepolia via StewardBridge.
+- **Vaults** `/app/vaults` — mainnet: Aave APYs + positions; testnet: real Aave Base Sepolia deposit/withdraw.
+- **Borrow** `/app/borrow` — open a trove, then view/manage it (add/withdraw collateral, repay, borrow more, close).
+- **Delegate / Settle / Earn** — fund an operator, meter settlements, watch the fee pool.
+
+---
+
+## Deployed contracts (Mezo testnet)
+
+| Contract | Address |
+|---|---|
+| StewardEscrow | `0x0231762F2F2285F6ea27Ad456E144C1371e4AF3B` |
+| StewardBridge Outbox | `0xa2b457DAb5b0710A5B8063f813e5fbE3A19deb33` |
+| MUSD (testnet) | `0x118917a40FAF1CD7a13dB0Ef56C86De7973Ac503` |
+
+The app also uses Mezo's MUSD protocol (BorrowerOperations, TroveManager, PriceFeed, HintHelpers, SortedTroves) — addresses in `night/MEZO_CONTRACTS.md`.
+
+### Contracts
+- **StewardEscrow** — `openAgent` (escrow MUSD under budget/cap/expiry), `settle` (operator-only, fee to pool, rest to payee), `topUp`, `revoke` (owner refund), `setFeeConfig`. 11 Foundry tests.
+- **StewardBridge** — a trusted **demo** bridge (single relayer, testnet only — not trustless): `BridgeOutbox.lock` on Mezo, `BridgeInbox.release` mints bMUSD on Base Sepolia, `relayer/bridge-relayer.mjs` delivers. 7 Foundry tests.
+
+---
+
+## Run
+
+```bash
+cd night && npm install && npm run dev     # http://localhost:3000
 ```
-Nodes
-  Contact   — name, role, org
-  Email     — subject, date                  source: gmail
-  Invoice   — amount, due date, status       source: finance
-  Charge    — amount, status                 source: finance
-  Meeting   — title, start, attendees        source: calendar
-  Document  — title, pages, type             source: drive
 
-Edges
-  sent_by        Email → Contact
-  sent_to        Email → Contact
-  attached_to    Invoice → Email, Charge → Email
-  charged_for    Charge → Invoice
-  paid           Charge → Contact
-  attended_by    Meeting → Contact
-  mentions       Meeting → Invoice, Document → Contact, Document → Invoice
-  follows_up     Email → Email
+Optional `night/.env.local`: `NEXT_PUBLIC_MEZO_NETWORK` (testnet|mainnet), `NEXT_PUBLIC_ETH_RPC`,
+`NEXT_PUBLIC_BASE_RPC`, `NEXT_PUBLIC_BASE_SEPOLIA_RPC`, `NEXT_PUBLIC_STEWARD_ESCROW`,
+`NEXT_PUBLIC_BRIDGE_OUTBOX`.
+
+## Deploy
+
+```bash
+cd contracts && forge test
+forge script script/Deploy.s.sol        --rpc-url mezo_testnet --private-key $PK --broadcast  # StewardEscrow
+forge script script/DeployOutbox.s.sol  --rpc-url mezo_testnet --private-key $PK --broadcast  # Bridge source
+forge script script/DeployInbox.s.sol   --rpc-url base_sepolia --private-key $PK --broadcast  # Bridge dest (needs Base gas)
 ```
 
-Traversal enforces node type allow-list, edge type allow-list, and max depth — all from the policy the agent registered on chain. A node whose type is not in the agent's `kgScope.nodes` is rejected at the hop, never fetched.
+---
+
+## Not built yet
+
+- Staking deposits (locking MEZO to claim a share of the fee pool) — Earn shows the live pool only.
+- MEZO-denominated settlement — waits on a published MEZO testnet token (settles in MUSD today).
+- Bridge is a trusted demo (single relayer); the destination Inbox + relayer await Base Sepolia gas.
+- bMUSD isn't Aave-listed, so the bridge→Aave-vault path needs an own ERC-4626 vault on the destination.
